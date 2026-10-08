@@ -14,7 +14,7 @@ const initialCetakList: CetakSKKPRecord[] = [
     nopol: "D 1842 ABX",
     namaPemilik: "Budi Santoso",
     nik: "3273241508820001",
-    tanggalPengajuan: "07-10-2026 08:30",
+    tanggalPengajuan: "08-10-2026 08:30",
     statusCetak: "BELUM_DICETAK",
     samsat: "Samsat Kota Bandung I Pajajaran",
     alamat: "Jl. Riau No. 45, Citarum, Bandung",
@@ -33,7 +33,7 @@ const initialCetakList: CetakSKKPRecord[] = [
     nopol: "D 4451 ZG",
     namaPemilik: "Siti Rahmawati",
     nik: "3273185203910004",
-    tanggalPengajuan: "07-10-2026 09:15",
+    tanggalPengajuan: "08-10-2026 09:15",
     statusCetak: "SUDAH_DICETAK",
     samsat: "Samsat Kota Bandung II Kawaluyaan",
     alamat: "Jl. Soekarno Hatta No. 120, Bandung",
@@ -43,7 +43,7 @@ const initialCetakList: CetakSKKPRecord[] = [
     nominalPkb: 2850000,
     nominalSwdkllj: 143000,
     opsiPengiriman: "JNE Express (Reguler)",
-    tanggalCetak: "07-10-2026 10:20",
+    tanggalCetak: "08-10-2026 10:20",
     petugasCetak: "Petugas Samsat Pajajaran",
     statusPengiriman: "PENDING",
     isRead: true,
@@ -54,7 +54,7 @@ const initialCetakList: CetakSKKPRecord[] = [
     nopol: "B 2091 KFL",
     namaPemilik: "Hendra Gunawan",
     nik: "3275021907850002",
-    tanggalPengajuan: "07-10-2026 09:45",
+    tanggalPengajuan: "08-10-2026 09:45",
     statusCetak: "BELUM_DICETAK",
     samsat: "Samsat Kota Bekasi",
     alamat: "Jl. Ahmad Yani No. 88, Bekasi Selatan",
@@ -73,7 +73,7 @@ const initialCetakList: CetakSKKPRecord[] = [
     nopol: "F 5102 BA",
     namaPemilik: "Dewi Lestari",
     nik: "3271046109930005",
-    tanggalPengajuan: "07-10-2026 10:05",
+    tanggalPengajuan: "08-10-2026 10:05",
     statusCetak: "SUDAH_DICETAK",
     samsat: "Samsat Kota Bogor",
     alamat: "Jl. Pajajaran No. 34, Bogor Tengah",
@@ -83,7 +83,7 @@ const initialCetakList: CetakSKKPRecord[] = [
     nominalPkb: 420000,
     nominalSwdkllj: 35000,
     opsiPengiriman: "JNE Express",
-    tanggalCetak: "07-10-2026 11:00",
+    tanggalCetak: "08-10-2026 11:00",
     petugasCetak: "Ahmad Junaedi",
     statusPengiriman: "PENDING",
   },
@@ -92,7 +92,7 @@ const initialCetakList: CetakSKKPRecord[] = [
     nopol: "E 3391 YN",
     namaPemilik: "Ridwan Maulana",
     nik: "3274011204880003",
-    tanggalPengajuan: "07-10-2026 10:30",
+    tanggalPengajuan: "08-10-2026 10:30",
     statusCetak: "BELUM_DICETAK",
     samsat: "Samsat Kota Cirebon",
     alamat: "Jl. Siliwangi No. 12, Kejaksan, Cirebon",
@@ -109,7 +109,7 @@ const initialCetakList: CetakSKKPRecord[] = [
     nopol: "Z 4821 TA",
     namaPemilik: "Nurul Hidayah",
     nik: "3278035501900006",
-    tanggalPengajuan: "07-10-2026 11:00",
+    tanggalPengajuan: "08-10-2026 11:00",
     statusCetak: "SUDAH_DICETAK",
     samsat: "Samsat Kota Tasikmalaya",
     alamat: "Jl. HZ Mustofa No. 201, Tasikmalaya",
@@ -193,10 +193,7 @@ const initialCetakList: CetakSKKPRecord[] = [
     opsiPengiriman: "Pos Indonesia",
     tanggalCetak: "07-10-2026 13:00",
     petugasCetak: "Ahmad Junaedi",
-    statusPengiriman: "DALAM_PENGIRIMAN",
-    noResi: "SKKP-2026-882910",
-    ekspedisi: "Pos Indonesia",
-    tanggalKirim: "07-10-2026 13:00",
+    statusPengiriman: "PENDING",
   },
   {
     id: "CTK-2026-011",
@@ -232,10 +229,7 @@ const initialCetakList: CetakSKKPRecord[] = [
     opsiPengiriman: "Pos Indonesia",
     tanggalCetak: "07-10-2026 13:40",
     petugasCetak: "Rizky Ramadhan",
-    statusPengiriman: "DALAM_PENGIRIMAN",
-    noResi: "SKKP-2026-882912",
-    ekspedisi: "Pos Indonesia",
-    tanggalKirim: "07-10-2026 13:40",
+    statusPengiriman: "PENDING",
   },
 ];
 
@@ -249,6 +243,7 @@ export interface FetchCetakFilterParams {
   search?: string;
   status?: string;
   samsat?: string;
+  date?: string; // Format "DD-MM-YYYY"
 }
 
 /**
@@ -274,6 +269,15 @@ export const cetakSkkpService = {
           item.noKohir?.toLowerCase().includes(q) ||
           item.kodeBayar?.toLowerCase().includes(q)
       );
+    }
+
+    if (params?.date) {
+      const targetDate = params.date.trim();
+      result = result.filter((item) => {
+        const pengajuan = item.tanggalPengajuan || "";
+        const cetak = item.tanggalCetak || "";
+        return pengajuan.includes(targetDate) || cetak.includes(targetDate);
+      });
     }
 
     const isDalamPengiriman = (st?: string) =>
@@ -373,7 +377,7 @@ export const cetakSkkpService = {
     // Sinkronkan ke modul Pengiriman & Tracking (mockDeliveries)
     try {
       addDeliveryRecord({
-        id: String(Date.now()),
+        id: `DELIV-${Date.now()}`,
         noResi: payload.noResi,
         noPolisi: updated.nopol,
         namaWp: updated.namaPemilik,
@@ -381,11 +385,11 @@ export const cetakSkkpService = {
         samsat: updated.samsat,
         ekspedisi: payload.ekspedisi,
         tanggalKirim: formattedNow.split(" ")[0],
-        status: "DALAM_PROSES",
-        kurirNama: "Kurir " + payload.ekspedisi,
-        kurirPhone: "0812-8829-1001",
+        status: "PENDING", // Status awal: Menunggu Pengambilan (belum diambil kurir)
+        kurirNama: "Menunggu Kurir",
+        kurirPhone: "-",
         jarakKm: "12.0 km",
-        estimasiWaktu: "1-2 Hari Kerja",
+        estimasiWaktu: "Menunggu Pengambilan Kurir",
         beratBerkas: "1 Berkas SKKP",
         asalKota: updated.samsat,
         tujuanKota: updated.alamat?.split(",").pop()?.trim() || "Jawa Barat",
@@ -442,6 +446,15 @@ export const cetakSkkpService = {
           item.noKohir?.toLowerCase().includes(q) ||
           item.kodeBayar?.toLowerCase().includes(q)
       );
+    }
+
+    if (params?.date) {
+      const targetDate = params.date.trim();
+      base = base.filter((item) => {
+        const pengajuan = item.tanggalPengajuan || "";
+        const cetak = item.tanggalCetak || "";
+        return pengajuan.includes(targetDate) || cetak.includes(targetDate);
+      });
     }
 
     if (params?.samsat && params.samsat !== "ALL") {

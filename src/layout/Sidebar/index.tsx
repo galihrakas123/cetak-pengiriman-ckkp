@@ -9,7 +9,10 @@ import {
   Circle,
   FileBarChart,
   Printer,
-  Truck
+  Truck,
+  Pin,
+  PinOff,
+  Users
 } from "lucide-react";
 import { ConfigContext } from "../../contexts/configContext";
 import AuthContext from "@/contexts/AuthContext";
@@ -59,15 +62,49 @@ const menuList: MenuItem[] = [
       },
     ],
   },
+  {
+    id: "manajemen-user",
+    name: "Manajemen User",
+    icon: Users,
+    link: "/manajemen-user",
+  },
 ];
 
 const Sidebar: React.FC = () => {
   const navigate = useNavigate();
-  const { state } = useContext(ConfigContext);
+  const { state, dispatch } = useContext(ConfigContext);
   const { logout } = useContext(AuthContext);
   const { pathname } = useLocation();
 
-  const isExpanded = !state.isSidebarOpen;
+  // isSidebarOpen === false -> Pinned Expanded (terkunci terbuka)
+  // isSidebarOpen === true -> Unpinned / Auto-collapse mode (terbuka saat hover, tertutup saat mouse keluar)
+  const isPinned = !state.isSidebarOpen;
+  const [isHovered, setIsHovered] = useState(false);
+  const isExpanded = isPinned || isHovered;
+
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleMouseEnter = () => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+      hoverTimeoutRef.current = null;
+    }
+    if (!isPinned) {
+      setIsHovered(true);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+    }
+    hoverTimeoutRef.current = setTimeout(() => {
+      if (!isPinned) {
+        setIsHovered(false);
+        setActiveFlyoutId(null);
+      }
+    }, 150);
+  };
 
   // State untuk melacak sub-menu yang terbuka di mode expanded (accordion)
   const [openSubMenus, setOpenSubMenus] = useState<string[]>(["pengiriman-skkp"]);
@@ -99,49 +136,89 @@ const Sidebar: React.FC = () => {
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
     };
   }, []);
 
+  const handleNavClick = () => {
+    if (!isPinned) {
+      setIsHovered(false);
+      setActiveFlyoutId(null);
+    }
+  };
+
   return (
     <aside
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       className={cn(
-        "fixed top-0 left-0 h-screen z-50 flex flex-col py-4 bg-white dark:bg-slate-900 border-r border-slate-200/80 dark:border-slate-800 transition-all duration-300 ease-in-out select-none shadow-[1px_0_3px_rgba(0,0,0,0.02)]",
-        isExpanded ? "w-[240px] px-3" : "w-[70px] px-2.5 items-center"
+        "fixed top-0 left-0 h-screen z-50 flex flex-col py-4 bg-white dark:bg-slate-900 border-r border-slate-200/80 dark:border-slate-800 transition-all duration-300 ease-in-out select-none",
+        isExpanded ? "w-[240px] px-3" : "w-[70px] px-2.5 items-center",
+        !isPinned && isHovered ? "shadow-2xl ring-1 ring-black/5 dark:ring-white/5" : "shadow-[1px_0_3px_rgba(0,0,0,0.02)]"
       )}
     >
-      {/* Top Logo / Brand Container */}
-      <Link
-        to="/"
-        className={cn(
-          "mb-6 flex items-center gap-3 group cursor-pointer relative",
-          isExpanded ? "px-2 justify-start" : "justify-center"
-        )}
-      >
-        <div
+      {/* Top Logo / Brand Container & Pin Lock Button */}
+      <div className={cn("flex items-center w-full mb-6", isExpanded ? "justify-between px-1" : "justify-center")}>
+        <Link
+          to="/"
+          onClick={handleNavClick}
           className={cn(
-            "w-10 h-10 rounded-xl bg-[#f8f9fa] dark:bg-slate-800 shadow-2xs border border-slate-200/90 dark:border-slate-700 flex items-center justify-center text-slate-800 dark:text-slate-200 flex-shrink-0 transition-all",
-            isExpanded ? "group-hover:scale-105 group-hover:border-[#08874f]" : ""
+            "flex items-center gap-3 group cursor-pointer relative",
+            isExpanded ? "justify-start flex-1" : "justify-center"
           )}
         >
-          <Layers
-            size={20}
+          <div
             className={cn(
-              "text-slate-800 dark:text-slate-200 stroke-[2.2] transition-colors",
-              isExpanded ? "group-hover:text-[#08874f]" : ""
+              "w-10 h-10 rounded-xl bg-[#f8f9fa] dark:bg-slate-800 shadow-2xs border border-slate-200/90 dark:border-slate-700 flex items-center justify-center text-slate-800 dark:text-slate-200 flex-shrink-0 transition-all",
+              isExpanded ? "group-hover:scale-105 group-hover:border-[#08874f]" : ""
             )}
-          />
-        </div>
-        {isExpanded && (
-          <div className="flex flex-col overflow-hidden">
-            <span className="text-xs font-bold text-slate-800 dark:text-white tracking-tight whitespace-nowrap group-hover:text-[#08874f] transition-colors">
-              DASHBOARD SKKP
-            </span>
-            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium whitespace-nowrap">
-              Bapenda Jabar
-            </span>
+          >
+            <Layers
+              size={20}
+              className={cn(
+                "text-slate-800 dark:text-slate-200 stroke-[2.2] transition-colors",
+                isExpanded ? "group-hover:text-[#08874f]" : ""
+              )}
+            />
           </div>
+          {isExpanded && (
+            <div className="flex flex-col overflow-hidden animate-in fade-in duration-200">
+              <span className="text-xs font-bold text-slate-800 dark:text-white tracking-tight whitespace-nowrap group-hover:text-[#08874f] transition-colors">
+                DASHBOARD SKKP
+              </span>
+              <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium whitespace-nowrap">
+                Bapenda Jabar
+              </span>
+            </div>
+          )}
+        </Link>
+
+        {/* Pin / Lock Button (Hanya tampil saat expanded) */}
+        {isExpanded && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              dispatch({ type: "TOGGLE_SIDEBAR" });
+            }}
+            title={isPinned ? "Lepas Kunci (Auto-Collapse saat kursor keluar)" : "Kunci Sidebar (Tetap Terbuka)"}
+            className={cn(
+              "p-1.5 rounded-lg transition-colors cursor-pointer ml-1 animate-in fade-in duration-200",
+              isPinned
+                ? "text-[#08874f] bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 dark:hover:bg-emerald-900/60"
+                : "text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
+            )}
+          >
+            {isPinned ? (
+              <Pin size={15} className="fill-[#08874f] text-[#08874f] rotate-45 transition-transform" />
+            ) : (
+              <PinOff size={15} className="transition-transform" />
+            )}
+          </button>
         )}
-      </Link>
+      </div>
 
       {/* Main Navigation List */}
       <nav
@@ -169,6 +246,7 @@ const Sidebar: React.FC = () => {
               <NavLink
                 key={item.id}
                 to={item.link}
+                onClick={handleNavClick}
                 className={({ isActive }) =>
                   cn(
                     "group relative flex items-center transition-all duration-200 outline-none rounded-xl",
@@ -284,6 +362,7 @@ const Sidebar: React.FC = () => {
                       <NavLink
                         key={child.link}
                         to={child.link}
+                        onClick={handleNavClick}
                         className={cn(
                           "flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-colors",
                           isChildActive
@@ -328,7 +407,10 @@ const Sidebar: React.FC = () => {
                         <NavLink
                           key={child.link}
                           to={child.link}
-                          onClick={() => setActiveFlyoutId(null)}
+                          onClick={() => {
+                            setActiveFlyoutId(null);
+                            handleNavClick();
+                          }}
                           className={cn(
                             "flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-colors w-full",
                             isChildActive

@@ -1,5 +1,6 @@
 import {
   DeliveryRecord,
+  DeliveryStatus,
   SummaryStats,
   RekapSamsat,
   WilayahCapaian,
@@ -26,8 +27,8 @@ export const mockDeliveries: DeliveryRecord[] = [
   {
     id: "1",
     noResi: "SKKP-2026-009182",
-    noPolisi: "D 1842 ABX",
-    namaWp: "Budi Santoso",
+    noPolisi: "D 7721 ZAA",
+    namaWp: "Ahmad Suryadi",
     alamatWp: "Jl. Riau No. 45, Bandung",
     samsat: "Samsat Bandung Barat",
     ekspedisi: "Pos Indonesia",
@@ -44,8 +45,8 @@ export const mockDeliveries: DeliveryRecord[] = [
   {
     id: "2",
     noResi: "SKKP-2026-009183",
-    noPolisi: "D 4451 ZG",
-    namaWp: "Siti Rahmawati",
+    noPolisi: "D 8812 KBB",
+    namaWp: "Yuni Shara",
     alamatWp: "Jl. Soekarno Hatta No. 120, Bandung",
     samsat: "Samsat Bandung Timur",
     ekspedisi: "JNE Express",
@@ -98,17 +99,17 @@ export const mockDeliveries: DeliveryRecord[] = [
   {
     id: "5",
     noResi: "SKKP-2026-009186",
-    noPolisi: "E 5521 MN",
-    namaWp: "Dewi Lestari",
+    noPolisi: "E 9921 QW",
+    namaWp: "Gunawan Wibisono",
     alamatWp: "Jl. Kartini No. 22, Cirebon",
     samsat: "Samsat Kota Cirebon",
     ekspedisi: "J&T Express",
     tanggalKirim: "2026-10-05",
     status: "PENDING",
-    kurirNama: "Indra Wijaya",
-    kurirPhone: "0878-5544-3322",
+    kurirNama: "Menunggu Kurir",
+    kurirPhone: "-",
     jarakKm: "5.1 km",
-    estimasiWaktu: "Proses Kurir",
+    estimasiWaktu: "Menunggu Pengambilan Kurir",
     beratBerkas: "1 Berkas SKKP",
     asalKota: "Kesambi, Cirebon",
     tujuanKota: "Kejaksan, Cirebon",
@@ -256,5 +257,36 @@ export const getRekapSamsat = (): RekapSamsat[] => mockRekapSamsat;
 export const getWilayahCapaian = (): WilayahCapaian[] => mockWilayahCapaian;
 
 export const addDeliveryRecord = (delivery: DeliveryRecord): void => {
+  const existingIdx = mockDeliveries.findIndex(
+    (d) => d.noPolisi.toLowerCase() === delivery.noPolisi.toLowerCase() || d.noResi === delivery.noResi
+  );
+  if (existingIdx !== -1) {
+    mockDeliveries.splice(existingIdx, 1);
+  }
   mockDeliveries.unshift(delivery);
+};
+
+export const updateDeliveryStatus = (
+  idOrResi: string,
+  newStatus: DeliveryStatus,
+  kurirData?: { kurirNama?: string; kurirPhone?: string }
+): DeliveryRecord | undefined => {
+  const item = mockDeliveries.find(
+    (d) => d.id === idOrResi || d.noResi.toLowerCase() === idOrResi.toLowerCase()
+  );
+  if (item) {
+    item.status = newStatus;
+    if (kurirData?.kurirNama) {
+      item.kurirNama = kurirData.kurirNama;
+    } else if (newStatus === "DALAM_PROSES" && (!item.kurirNama || item.kurirNama.includes("Menunggu"))) {
+      item.kurirNama = "Kurir " + (item.ekspedisi || "Logistik");
+      item.kurirPhone = "0812-" + Math.floor(1000 + Math.random() * 9000) + "-5678";
+    }
+    if (newStatus === "DALAM_PROSES") {
+      item.estimasiWaktu = "Sedang Diantar (Estimasi 30-45 Menit)";
+    } else if (newStatus === "TERKIRIM") {
+      item.estimasiWaktu = "Telah Diterima";
+    }
+  }
+  return item;
 };

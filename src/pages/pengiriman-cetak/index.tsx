@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "react-query";
-import { useNavigate } from "react-router-dom";
 import {
   Printer,
   Send,
@@ -36,15 +35,18 @@ import { cetakSkkpService } from "@/services/cetakSkkpService";
 import { CetakSKKPRecord, CetakStatus } from "@/types";
 import { formatRupiah } from "@/utils/utils";
 import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import { DatePicker } from "@/components/features/date/DatePicker";
 
 const PengelolaanCetakPage: React.FC = () => {
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
 
   // Filters & Search
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [samsatFilter, setSamsatFilter] = useState<string>("ALL");
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const formattedDateParam = selectedDate ? format(selectedDate, "dd-MM-yyyy") : undefined;
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -57,17 +59,27 @@ const PengelolaanCetakPage: React.FC = () => {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [activeDetailItem, setActiveDetailItem] = useState<CetakSKKPRecord | null>(null);
 
+  // Per-row sending state (hanya satu baris yang loading saat diproses kirim)
+  const [sendingId, setSendingId] = useState<string | null>(null);
+
+  // State alur Konfirmasi dan Verifikasi Cetak SKKP
+  const [printTargetItem, setPrintTargetItem] = useState<CetakSKKPRecord | null>(null);
+  const [isPrintConfirmOpen, setIsPrintConfirmOpen] = useState(false);
+  const [isPrintVerifyOpen, setIsPrintVerifyOpen] = useState(false);
+  const [isBatchPrintMode, setIsBatchPrintMode] = useState(false);
+
   // 1. Query: Fetch Cetak SKKP List
   const {
     data: cetakList = [],
     isLoading,
   } = useQuery<CetakSKKPRecord[]>(
-    ["cetak-skkp", { searchTerm, statusFilter, samsatFilter }],
+    ["cetak-skkp", { searchTerm, statusFilter, samsatFilter, date: formattedDateParam }],
     () =>
       cetakSkkpService.fetchCetakSkkpList({
         search: searchTerm,
         status: statusFilter,
         samsat: samsatFilter,
+        date: formattedDateParam,
       }),
     {
       keepPreviousData: true,
@@ -75,13 +87,14 @@ const PengelolaanCetakPage: React.FC = () => {
     }
   );
 
-  // 2. Query: Fetch Stats (sinkron dengan filter pencarian dan wilayah Samsat)
+  // 2. Query: Fetch Stats (sinkron dengan filter pencarian, tanggal, dan wilayah Samsat)
   const { data: stats } = useQuery(
-    ["cetak-skkp-stats", { searchTerm, samsatFilter }],
+    ["cetak-skkp-stats", { searchTerm, samsatFilter, date: formattedDateParam }],
     () =>
       cetakSkkpService.fetchCetakStats({
         search: searchTerm,
         samsat: samsatFilter,
+        date: formattedDateParam,
       }),
     { refetchOnWindowFocus: false }
   );
@@ -116,17 +129,22 @@ const PengelolaanCetakPage: React.FC = () => {
     }
   );
 
-  // 4. Mutation: Proses Pengiriman SKKP (Langsung tanpa popup konfirmasi)
+  // 4. Mutation: Proses Pengiriman SKKP (Hanya satu data per baris yang diproses)
   const prosesKirimMutation = useMutation(
     (payload: { id: string; ekspedisi: string; noResi: string; catatan?: string }) =>
       cetakSkkpService.prosesKirimSKKP(payload),
     {
       onSuccess: (updatedItem) => {
+        // Optimistic removal: Langsung hapus satu data yang telah siap kirim dari tampilan tabel
+        queryClient.setQueryData<CetakSKKPRecord[]>(
+          ["cetak-skkp", { searchTerm, statusFilter, samsatFilter }],
+          (old = []) => old.filter((item) => item.id !== updatedItem.id)
+        );
         queryClient.invalidateQueries("cetak-skkp");
         queryClient.invalidateQueries("cetak-skkp-stats");
         toast({
           title: "Dokumen masuk ke proses pengiriman. Silakan pantau di menu Pengiriman & Tracking",
-          description: `Berkas ${updatedItem.nopol} (${updatedItem.namaPemilik}) telah diteruskan ke kurir ${updatedItem.ekspedisi}.`,
+          description: `Berkas ${updatedItem.nopol} (${updatedItem.namaPemilik}) telah dipindahkan ke menu Pengiriman & Tracking (Status: Menunggu Pengambilan).`,
         });
       },
       onError: (err: any) => {
@@ -135,6 +153,9 @@ const PengelolaanCetakPage: React.FC = () => {
           title: "Gagal Memproses Pengiriman",
           description: err?.message || "Terjadi kesalahan.",
         });
+      },
+      onSettled: () => {
+        setSendingId(null);
       },
     }
   );
@@ -162,17 +183,55 @@ const PengelolaanCetakPage: React.FC = () => {
     }
   );
 
-  // Eksekusi Langsung Cetak SKKP (Update status ke SUDAH_DICETAK + dialog print)
-  const handleCetakSKKPDirect = (item: CetakSKKPRecord) => {
-    updateStatusMutation.mutate({
-      id: item.id,
-      status: "SUDAH_DICETAK",
-    });
-    window.print();
+  // Inisiasi Cetak Dokumen Tunggal (Membuka dialog konfirmasi terlebih dahulu)
+  const handleInitiateCetak = (item: CetakSKKPRecord) => {
+    setPrintTargetItem(item);
+    setIsBatchPrintMode(false);
+    setIsPrintConfirmOpen(true);
   };
 
-  // Eksekusi Langsung Kirim SKKP (Tanpa popup konfirmasi)
+  // Inisiasi Cetak Massal (Batch)
+  const handleInitiateBatchCetak = () => {
+    setIsBatchPrintMode(true);
+    setIsPrintConfirmOpen(true);
+  };
+
+  // Eksekusi print browser dari dialog konfirmasi
+  const handleProceedPrint = () => {
+    setIsPrintConfirmOpen(false);
+    // Buka jendela print browser bawaan
+    window.print();
+    // Buka dialog verifikasi konfirmasi hasil cetak fisik
+    setIsPrintVerifyOpen(true);
+  };
+
+  // Konfirmasi akhir bahwa dokumen fisik berhasil dicetak
+  const handleConfirmPrintSuccess = () => {
+    if (isBatchPrintMode) {
+      batchPrintMutation.mutate(validBelumDicetakSelectedIds);
+    } else if (printTargetItem) {
+      updateStatusMutation.mutate({
+        id: printTargetItem.id,
+        status: "SUDAH_DICETAK",
+      });
+    }
+    setIsPrintVerifyOpen(false);
+    setPrintTargetItem(null);
+  };
+
+  // Pembatalan verifikasi cetak (Status TETAP BELUM_DICETAK)
+  const handleCancelPrintVerification = () => {
+    setIsPrintVerifyOpen(false);
+    setPrintTargetItem(null);
+    toast({
+      title: "Pencetakan Dibatalkan",
+      description: "Status berkas tetap 'Belum Dicetak'. Anda dapat mencetaknya kembali kapan saja.",
+    });
+  };
+
+  // Eksekusi Langsung Kirim SKKP (Hanya memproses satu berkas yang diklik)
   const handleKirimSKKPDirect = (item: CetakSKKPRecord) => {
+    setSendingId(item.id);
     const ekspedisi = item.opsiPengiriman?.includes("JNE") ? "JNE Express" : "Pos Indonesia";
     const randomResi = `SKKP-${new Date().getFullYear()}-${Math.floor(100000 + Math.random() * 900000)}`;
     prosesKirimMutation.mutate({
@@ -245,7 +304,7 @@ const PengelolaanCetakPage: React.FC = () => {
             <Button
               variant="primary"
               size="sm"
-              onClick={() => batchPrintMutation.mutate(validBelumDicetakSelectedIds)}
+              onClick={handleInitiateBatchCetak}
               disabled={batchPrintMutation.isLoading}
               className="gap-2"
             >
@@ -256,9 +315,9 @@ const PengelolaanCetakPage: React.FC = () => {
         </div>
       </div>
 
-      {/* 4 Kartu KPI Ringkasan Status (Seragam 100% dengan Menu Dashboard) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
-        {/* Card 1: Total Permintaan (Sesuai Card 1 di Menu Dashboard) */}
+      {/* 3 Kartu KPI Ringkasan Status Antrean Cetak */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
+        {/* Card 1: Total Permintaan */}
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#08874f] to-[#046138] text-white p-5 shadow-xs border border-emerald-700/50 flex flex-col justify-between min-h-[140px] hover:shadow-md transition-all">
           <div className="flex items-center justify-between">
             <p className="text-xs font-semibold text-emerald-100 uppercase tracking-wider">
@@ -278,7 +337,7 @@ const PengelolaanCetakPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Card 2: Belum Dicetak (Sesuai Card di Menu Dashboard) */}
+        {/* Card 2: Belum Dicetak */}
         <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-xs p-5 flex flex-col justify-between min-h-[140px] hover:shadow-sm transition-all">
           <div className="flex items-center justify-between">
             <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
@@ -298,7 +357,7 @@ const PengelolaanCetakPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Card 3: Sudah Dicetak (Sesuai Card Sukses Terkirim di Menu Dashboard) */}
+        {/* Card 3: Sudah Dicetak */}
         <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-xs p-5 flex flex-col justify-between min-h-[140px] hover:shadow-sm transition-all">
           <div className="flex items-center justify-between">
             <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
@@ -317,26 +376,6 @@ const PengelolaanCetakPage: React.FC = () => {
             </span>
           </div>
         </div>
-
-        {/* Card 4: Dalam Pengiriman (Sesuai Card di Menu Dashboard) */}
-        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-xs p-5 flex flex-col justify-between min-h-[140px] hover:shadow-sm transition-all">
-          <div className="flex items-center justify-between">
-            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-              Dalam Pengiriman
-            </p>
-            <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-[#08874f] dark:text-emerald-400 flex items-center justify-center">
-              <Truck size={17} />
-            </div>
-          </div>
-          <div className="mt-3">
-            <h3 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-              {(stats?.dalamPengiriman ?? stats?.sudahTerkirim ?? 0).toLocaleString("id-ID")}
-            </h3>
-            <span className="text-[11px] text-slate-400 dark:text-slate-400 font-medium mt-1 block">
-              Total Berkas dalam pengiriman
-            </span>
-          </div>
-        </div>
       </div>
 
       {/* Main Container Card Sesuai Standar Menu Lain */}
@@ -345,7 +384,7 @@ const PengelolaanCetakPage: React.FC = () => {
         subtitle="Kelola antrean pencetakan lembar SKKP dan teruskan pengiriman ke kurir"
         action={
           <div className="flex items-center gap-2">
-            {(searchTerm || statusFilter !== "ALL" || samsatFilter !== "ALL") && (
+            {(searchTerm || statusFilter !== "ALL" || selectedDate) && (
               <Button
                 variant="tertiary"
                 size="sm"
@@ -353,6 +392,7 @@ const PengelolaanCetakPage: React.FC = () => {
                   setSearchTerm("");
                   setStatusFilter("ALL");
                   setSamsatFilter("ALL");
+                  setSelectedDate(undefined);
                   setCurrentPage(1);
                 }}
                 className="text-xs"
@@ -376,11 +416,24 @@ const PengelolaanCetakPage: React.FC = () => {
             containerClassName="w-full md:w-80"
           />
 
-          {/* Filter Dropdowns */}
+          {/* Filter Dropdowns & Date Picker */}
           <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
-            <Filter size={15} className="text-slate-400" />
+            <Filter size={15} className="text-[#08874f] dark:text-emerald-400" />
 
-            {/* Status Cetak Filter (3 Status + Semua) */}
+            {/* Date Picker Sesuai Style Project */}
+            <div className="w-full sm:w-44">
+              <DatePicker
+                value={selectedDate}
+                onChangeDate={(d) => {
+                  setSelectedDate(d);
+                  setCurrentPage(1);
+                }}
+                placeholder="Pilih Tanggal"
+                buttonClassName="h-[38px] text-xs py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700"
+              />
+            </div>
+
+            {/* Status Cetak Filter (Hanya 2 Status: Belum Dicetak & Sudah Dicetak) */}
             <div className="relative">
               <select
                 value={statusFilter}
@@ -390,33 +443,9 @@ const PengelolaanCetakPage: React.FC = () => {
                 }}
                 className="appearance-none bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs rounded-xl px-3.5 py-2 pr-8 focus:outline-none focus:ring-1 focus:ring-[#08874f] focus:border-[#08874f] transition-all cursor-pointer font-medium"
               >
-                <option value="ALL">Semua Antrean Cetak</option>
+                <option value="ALL">Semua Status</option>
                 <option value="BELUM_DICETAK">Belum Dicetak</option>
                 <option value="SUDAH_DICETAK">Sudah Dicetak</option>
-                <option value="DALAM_PENGIRIMAN">Dalam Pengiriman</option>
-              </select>
-              <ChevronDown
-                size={14}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#08874f] dark:text-emerald-400 stroke-[2.2] pointer-events-none"
-              />
-            </div>
-
-            {/* Samsat Asal Filter */}
-            <div className="relative">
-              <select
-                value={samsatFilter}
-                onChange={(e) => {
-                  setSamsatFilter(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="appearance-none bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs rounded-xl px-3.5 py-2 pr-8 focus:outline-none focus:ring-1 focus:ring-[#08874f] focus:border-[#08874f] transition-all cursor-pointer font-medium"
-              >
-                <option value="ALL">Semua Samsat</option>
-                <option value="Bandung">Samsat Bandung</option>
-                <option value="Bekasi">Samsat Bekasi</option>
-                <option value="Bogor">Samsat Bogor</option>
-                <option value="Cirebon">Samsat Cirebon</option>
-                <option value="Tasikmalaya">Samsat Tasikmalaya</option>
               </select>
               <ChevronDown
                 size={14}
@@ -648,7 +677,7 @@ const PengelolaanCetakPage: React.FC = () => {
                               <Button
                                 size="sm"
                                 variant="primary"
-                                onClick={() => handleCetakSKKPDirect(row)}
+                                onClick={() => handleInitiateCetak(row)}
                                 disabled={updateStatusMutation.isLoading}
                                 className="gap-1.5"
                                 title="Cetak Berkas SKKP"
@@ -670,12 +699,16 @@ const PengelolaanCetakPage: React.FC = () => {
                               <Button
                                 size="sm"
                                 onClick={() => handleKirimSKKPDirect(row)}
-                                disabled={prosesKirimMutation.isLoading}
+                                disabled={sendingId === row.id}
                                 className="gap-1.5 font-semibold text-xs transition-all shadow-xs bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white dark:bg-blue-600 dark:hover:bg-blue-700 border-0 cursor-pointer shadow-blue-500/20"
-                                title="Klik untuk mengubah status berkas menjadi 'Dalam Pengiriman' dan memindahkannya ke menu Tracking"
+                                title="Klik untuk memproses pengiriman berkas ini ke kurir"
                               >
-                                <Send size={13} />
-                                Siap Kirim
+                                {sendingId === row.id ? (
+                                  <Loader2 size={13} className="animate-spin" />
+                                ) : (
+                                  <Send size={13} />
+                                )}
+                                {sendingId === row.id ? "Memproses..." : "Siap Kirim"}
                               </Button>
                             )}
                           </div>
@@ -747,14 +780,29 @@ const PengelolaanCetakPage: React.FC = () => {
             <div className="space-y-4 pt-1 font-sans text-xs">
               {/* Group Informasi Identitas dengan Stroke (border-slate-200) */}
               <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/80 p-4 space-y-3">
-                {/* Header Instansi */}
-                <div className="text-left border-b border-slate-100 dark:border-slate-700/60 pb-2.5">
-                  <h4 className="font-bold text-slate-800 dark:text-slate-100 text-xs tracking-wider uppercase">
-                    Pemerintah Daerah Provinsi Jawa Barat
-                  </h4>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                    Badan Pendapatan Daerah (Bapenda) &bull; {activeDetailItem.samsat}
-                  </p>
+                {/* Header Instansi & Badge Status */}
+                <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-700/60 pb-2.5">
+                  <div className="text-left">
+                    <h4 className="font-bold text-slate-800 dark:text-slate-100 text-xs tracking-wider uppercase">
+                      Pemerintah Daerah Provinsi Jawa Barat
+                    </h4>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                      Badan Pendapatan Daerah (Bapenda) &bull; {activeDetailItem.samsat}
+                    </p>
+                  </div>
+                  <div>
+                    {activeDetailItem.statusCetak === "SUDAH_DICETAK" ? (
+                      <Badge className="bg-[#08874f] hover:bg-[#06683d] text-white font-medium text-[11px] px-2.5 py-0.5 inline-flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3" />
+                        Sudah dicetak
+                      </Badge>
+                    ) : (
+                      <Badge className="bg-amber-500 hover:bg-amber-600 text-white font-medium text-[11px] px-2.5 py-0.5 inline-flex items-center gap-1">
+                        <Clock className="w-3 h-3 text-white" />
+                        Belum dicetak
+                      </Badge>
+                    )}
+                  </div>
                 </div>
 
                 {/* Rincian Identitas (2 Kolom Sejajar: Label : Value) */}
@@ -897,19 +945,313 @@ const PengelolaanCetakPage: React.FC = () => {
                   </div>
                 </div>
               ) : (
-                <div className="flex items-start gap-3.5 p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xs">
-                  <div className="w-6 h-6 rounded-full bg-amber-500 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
-                    <AlertTriangle size={13} className="stroke-[2.5]" />
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xs">
+                  <div className="flex items-start gap-3.5 flex-1">
+                    <div className="w-6 h-6 rounded-full bg-amber-500 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
+                      <AlertTriangle size={13} className="stroke-[2.5]" />
+                    </div>
+                    <div className="text-left">
+                      <p className="text-slate-800 dark:text-slate-100 text-xs sm:text-[13px] leading-relaxed font-normal">
+                        Berkas Surat Ketetapan Kewajiban Pembayaran <strong className="font-semibold text-amber-600 dark:text-amber-400">belum dicetak</strong>. Anda dapat mencetaknya langsung melalui tombol di sini atau melalui kolom aksi tabel antrean.
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex-1 text-left">
-                    <p className="text-slate-800 dark:text-slate-100 text-xs sm:text-[13px] leading-relaxed font-normal">
-                      Berkas Surat Ketetapan Kewajiban Pembayaran belum dicetak. Silakan gunakan tombol 'Cetak SKKP' pada tabel antrean agar berkas dapat dikirim dan dipantau di menu <strong className="font-semibold text-slate-900 dark:text-white">Pengiriman & Tracking SKKP</strong>.
-                    </p>
-                  </div>
+                  <Button
+                    type="button"
+                    variant="primary"
+                    size="sm"
+                    onClick={() => handleInitiateCetak(activeDetailItem)}
+                    disabled={updateStatusMutation.isLoading}
+                    className="shrink-0 gap-1.5 shadow-xs font-medium"
+                    title="Cetak Berkas SKKP Langsung"
+                  >
+                    {updateStatusMutation.isLoading ? (
+                      <Loader2 size={13} className="animate-spin" />
+                    ) : (
+                      <Printer size={13} />
+                    )}
+                    Cetak SKKP
+                  </Button>
                 </div>
               )}
+
+              {/* Footer Aksi Dialog Detail (Jika Status SUDAH_DICETAK: 2 Button Full Width) */}
+              {activeDetailItem.statusCetak === "SUDAH_DICETAK" &&
+                !activeDetailItem.noResi &&
+                activeDetailItem.statusPengiriman !== "DALAM_PENGIRIMAN" && (
+                  <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-100 dark:border-slate-800 w-full">
+                    <button
+                      type="button"
+                      onClick={() => setIsDetailOpen(false)}
+                      className="w-full h-11 border border-[#08874f] bg-white dark:bg-slate-900 text-[#08874f] dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-slate-800 font-semibold text-sm rounded-lg transition-all flex items-center justify-center cursor-pointer shadow-2xs"
+                    >
+                      Tutup
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleKirimSKKPDirect(activeDetailItem);
+                        setIsDetailOpen(false);
+                      }}
+                      disabled={sendingId === activeDetailItem.id}
+                      className="w-full h-11 bg-[#08874f] hover:bg-[#06683d] text-white font-semibold text-sm rounded-lg transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer disabled:opacity-70"
+                    >
+                      {sendingId === activeDetailItem.id ? (
+                        <Loader2 size={15} className="animate-spin" />
+                      ) : (
+                        <Send size={15} />
+                      )}
+                      Siap Kirim
+                    </button>
+                  </div>
+                )}
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* ========================================================================= */}
+      {/* 1. DIALOG KONFIRMASI AWAL CETAK SKKP (Style Seragam Detail Berkas SKKP)   */}
+      {/* ========================================================================= */}
+      <Dialog open={isPrintConfirmOpen} onOpenChange={setIsPrintConfirmOpen}>
+        <DialogContent className="max-w-xl p-6 sm:p-7 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl">
+          <DialogHeader className="p-0 text-left">
+            <div className="flex items-start justify-between">
+              <div>
+                <DialogTitle className="text-xl font-bold text-slate-900 dark:text-white tracking-tight text-left">
+                  {isBatchPrintMode
+                    ? `Konfirmasi Cetak Massal (${validBelumDicetakSelectedIds.length} Berkas)`
+                    : "Konfirmasi Cetak Lembar SKKP"}
+                </DialogTitle>
+                <DialogDescription className="text-xs text-slate-500 dark:text-slate-400 text-left mt-0.5">
+                  {isBatchPrintMode
+                    ? `Mempersiapkan pencetakan lembar SKKP untuk ${validBelumDicetakSelectedIds.length} pemohon terpilih`
+                    : "Rincian Surat Ketetapan Kewajiban Pembayaran Pajak Kendaraan Bermotor yang akan dicetak"}
+                </DialogDescription>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsPrintConfirmOpen(false);
+                  setPrintTargetItem(null);
+                }}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                title="Tutup Dialog"
+              >
+                <X size={18} />
+              </button>
+            </div>
+          </DialogHeader>
+
+          <div className="space-y-4 pt-1 font-sans text-xs">
+            {!isBatchPrintMode && printTargetItem ? (
+              <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/80 p-4 space-y-3">
+                {/* Header Instansi & Badge Status */}
+                <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-700/60 pb-2.5">
+                  <div className="text-left">
+                    <h4 className="font-bold text-slate-800 dark:text-slate-100 text-xs tracking-wider uppercase">
+                      Pemerintah Daerah Provinsi Jawa Barat
+                    </h4>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                      Badan Pendapatan Daerah (Bapenda) &bull; {printTargetItem.samsat}
+                    </p>
+                  </div>
+                  <div>
+                    <Badge className="bg-amber-500 hover:bg-amber-600 text-white font-medium text-[11px] px-2.5 py-0.5 inline-flex items-center gap-1">
+                      <Clock className="w-3 h-3 text-white" />
+                      Belum dicetak
+                    </Badge>
+                  </div>
+                </div>
+
+                {/* Rincian Identitas (2 Kolom Sejajar: Label : Value) */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2 text-xs">
+                  <div className="space-y-1.5">
+                    <div className="flex items-baseline">
+                      <span className="w-28 shrink-0 text-slate-600 dark:text-slate-400 font-medium">Nomor Polisi</span>
+                      <span className="text-slate-400 mr-2">:</span>
+                      <span className="font-bold font-mono text-sm text-[#08874f] dark:text-emerald-400">
+                        {printTargetItem.nopol}
+                      </span>
+                    </div>
+                    <div className="flex items-baseline">
+                      <span className="w-28 shrink-0 text-slate-600 dark:text-slate-400 font-medium">Nama Pemilik</span>
+                      <span className="text-slate-400 mr-2">:</span>
+                      <span className="font-semibold text-slate-900 dark:text-white">
+                        {printTargetItem.namaPemilik}
+                      </span>
+                    </div>
+                    <div className="flex items-baseline">
+                      <span className="w-28 shrink-0 text-slate-600 dark:text-slate-400 font-medium">Kendaraan</span>
+                      <span className="text-slate-400 mr-2">:</span>
+                      <span className="text-slate-800 dark:text-slate-200">
+                        {printTargetItem.jenisKendaraan || "Kendaraan Bermotor"}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <div className="flex items-baseline">
+                      <span className="w-28 shrink-0 text-slate-600 dark:text-slate-400 font-medium">No. Kohir SKKP</span>
+                      <span className="text-slate-400 mr-2">:</span>
+                      <span className="font-mono text-slate-800 dark:text-slate-200">
+                        {printTargetItem.noKohir}
+                      </span>
+                    </div>
+                    <div className="flex items-baseline">
+                      <span className="w-28 shrink-0 text-slate-600 dark:text-slate-400 font-medium">Kode Bayar</span>
+                      <span className="text-slate-400 mr-2">:</span>
+                      <span className="font-mono font-semibold text-emerald-700 dark:text-emerald-400">
+                        {printTargetItem.kodeBayar}
+                      </span>
+                    </div>
+                    <div className="flex items-baseline">
+                      <span className="w-28 shrink-0 text-slate-600 dark:text-slate-400 font-medium">Total Tagihan</span>
+                      <span className="text-slate-400 mr-2">:</span>
+                      <span className="font-mono font-bold text-[#08874f] dark:text-emerald-400">
+                        {formatRupiah((printTargetItem.nominalPkb || 0) + (printTargetItem.nominalSwdkllj || 0))}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/80 p-4 space-y-2">
+                <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-700/60 pb-2">
+                  <h4 className="font-bold text-slate-800 dark:text-slate-100 text-xs tracking-wider uppercase">
+                    Pencetakan Kolektif Berkas SKKP
+                  </h4>
+                  <Badge className="bg-[#08874f] text-white text-[11px] px-2.5 py-0.5">
+                    {validBelumDicetakSelectedIds.length} Berkas Dipilih
+                  </Badge>
+                </div>
+                <p className="text-slate-600 dark:text-slate-300 text-xs leading-relaxed pt-1">
+                  Sistem akan memproses pencetakan untuk seluruh <strong className="font-semibold text-slate-900 dark:text-white">{validBelumDicetakSelectedIds.length} berkas</strong> yang telah Anda tandai.
+                </p>
+              </div>
+            )}
+
+            {/* Box Alert / Notice Seragam Detail Berkas SKKP */}
+            <div className="flex items-start gap-3.5 p-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xs">
+              <div className="w-6 h-6 rounded-full bg-amber-500 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
+                <AlertTriangle size={13} className="stroke-[2.5]" />
+              </div>
+              <div className="text-left flex-1">
+                <p className="text-slate-800 dark:text-slate-100 text-xs sm:text-[13px] leading-relaxed font-normal">
+                  Pastikan printer telah menyala dan terisi lembar kertas resmi SKKP. Klik tombol <strong className="font-semibold text-slate-900 dark:text-white">'Lanjutkan Cetak'</strong> untuk membuka pratinjau cetak dokumen di peramban Anda.
+                </p>
+              </div>
+            </div>
+
+            {/* Footer Aksi 2 Button Full Width Mengisi Ruang Sesuai Gambar Referensi */}
+            <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-100 dark:border-slate-800 w-full">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsPrintConfirmOpen(false);
+                  setPrintTargetItem(null);
+                }}
+                className="w-full h-11 border border-[#08874f] bg-white dark:bg-slate-900 text-[#08874f] dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-slate-800 font-semibold text-sm rounded-lg transition-all flex items-center justify-center cursor-pointer shadow-2xs"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleProceedPrint}
+                className="w-full h-11 bg-[#08874f] hover:bg-[#06683d] text-white font-semibold text-sm rounded-lg transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer"
+              >
+                <Printer size={15} />
+                Lanjutkan Cetak
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ========================================================================= */}
+      {/* 2. DIALOG VERIFIKASI HASIL CETAK (Style Seragam Detail Berkas SKKP)        */}
+      {/* ========================================================================= */}
+      <Dialog open={isPrintVerifyOpen} onOpenChange={setIsPrintVerifyOpen}>
+        <DialogContent className="max-w-xl p-6 sm:p-7 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl">
+          <DialogHeader className="p-0 text-left">
+            <div className="flex items-start justify-between">
+              <div>
+                <DialogTitle className="text-xl font-bold text-slate-900 dark:text-white tracking-tight text-left">
+                  Verifikasi Hasil Pencetakan
+                </DialogTitle>
+                <DialogDescription className="text-xs text-slate-500 dark:text-slate-400 text-left mt-0.5">
+                  Konfirmasi penerbitan fisik dokumen lembar SKKP sebelum memperbarui status sistem
+                </DialogDescription>
+              </div>
+              <button
+                type="button"
+                onClick={handleCancelPrintVerification}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                title="Tutup Dialog"
+              >
+                <X size={18} />
+              </button>
+            </div>
+          </DialogHeader>
+
+          <div className="space-y-4 pt-1 font-sans text-xs">
+            {/* Box Konfirmasi Hasil Cetak Identitas */}
+            <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/80 p-4 space-y-3">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-700/60 pb-2">
+                <h4 className="font-bold text-slate-800 dark:text-slate-100 text-xs tracking-wider uppercase">
+                  Pemeriksaan Fisik Berkas
+                </h4>
+                <span className="font-mono font-bold text-[#08874f] dark:text-emerald-400 text-sm">
+                  {isBatchPrintMode ? `${validBelumDicetakSelectedIds.length} Berkas` : printTargetItem?.nopol}
+                </span>
+              </div>
+              <p className="text-slate-700 dark:text-slate-200 text-xs leading-relaxed">
+                Apakah lembar SKKP untuk kendaraan{" "}
+                <strong className="text-slate-900 dark:text-white font-semibold">
+                  {isBatchPrintMode
+                    ? `${validBelumDicetakSelectedIds.length} berkas pemohon terpilih`
+                    : `${printTargetItem?.nopol} a.n. ${printTargetItem?.namaPemilik}`}
+                </strong>{" "}
+                telah <strong className="text-[#08874f] dark:text-emerald-400">berhasil keluar dari printer</strong> dan selesai dicetak dengan sempurna?
+              </p>
+            </div>
+
+            {/* Box Info Biru Khas Dialog Detail SKKP */}
+            <div className="flex items-start gap-3.5 p-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xs">
+              <div className="w-6 h-6 rounded-full bg-[#1877F2] text-white flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
+                <Info size={14} className="stroke-[2.5]" />
+              </div>
+              <div className="text-left flex-1">
+                <p className="text-slate-800 dark:text-slate-100 text-xs leading-relaxed font-normal">
+                  Jika Anda membatalkan di jendela printer atau terjadi kendala pada mesin cetak, pilih tombol <strong className="font-semibold text-slate-900 dark:text-white">'Tidak / Belum Dicetak'</strong>. Status berkas akan tetap terjaga sebagai <strong className="font-semibold text-amber-600 dark:text-amber-400">Belum Dicetak</strong>.
+                </p>
+              </div>
+            </div>
+
+            {/* Footer Aksi 2 Button Full Width Mengisi Ruang Sesuai Gambar Referensi */}
+            <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-100 dark:border-slate-800 w-full">
+              <button
+                type="button"
+                onClick={handleCancelPrintVerification}
+                className="w-full h-11 border border-[#08874f] bg-white dark:bg-slate-900 text-[#08874f] dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-slate-800 font-semibold text-sm rounded-lg transition-all flex items-center justify-center cursor-pointer shadow-2xs"
+              >
+                Tidak / Belum Dicetak
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmPrintSuccess}
+                disabled={updateStatusMutation.isLoading || batchPrintMutation.isLoading}
+                className="w-full h-11 bg-[#08874f] hover:bg-[#06683d] text-white font-semibold text-sm rounded-lg transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer disabled:opacity-70"
+              >
+                {updateStatusMutation.isLoading || batchPrintMutation.isLoading ? (
+                  <Loader2 size={15} className="animate-spin" />
+                ) : (
+                  <Check size={16} className="stroke-[3]" />
+                )}
+                Ya, Berhasil Dicetak
+              </button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

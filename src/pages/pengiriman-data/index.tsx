@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   Filter, 
   Eye,
@@ -7,7 +7,12 @@ import {
   User,
   MapPin,
   Check,
-  ChevronDown
+  ChevronDown,
+  Layers,
+  Clock,
+  Truck,
+  CheckCircle2,
+  AlertCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -25,21 +30,40 @@ import { getAllDeliveries } from "@/services/mockData";
 import { DeliveryRecord, DeliveryStatus } from "@/types";
 import { useNavigate } from "react-router-dom";
 import { CustomTablePagination } from "@/components/features/table/CustomTablePagination";
+import { DatePicker } from "@/components/features/date/DatePicker";
+import { format } from "date-fns";
 
 const PengirimanDataPage: React.FC = () => {
   const navigate = useNavigate();
-  const allDeliveries = getAllDeliveries();
+  const [deliveries, setDeliveries] = useState<DeliveryRecord[]>(() => [...getAllDeliveries()]);
+
+  // Sinkronkan data pengiriman saat komponen dimount atau dibuka
+  useEffect(() => {
+    setDeliveries([...getAllDeliveries()]);
+  }, []);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
-  const [samsatFilter, setSamsatFilter] = useState("ALL");
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
 
   // State pagination
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
-  const filteredData = allDeliveries.filter((item) => {
+  // Statistik Dinamis untuk 5 Card Ringkasan Status
+  const baseStatsData = deliveries;
+
+  const totalPengirimanCount = baseStatsData.length;
+  const totalMenungguCount = baseStatsData.filter((d) => d.status === "PENDING").length;
+  const totalProsesCount = baseStatsData.filter((d) => d.status === "DALAM_PROSES").length;
+  const totalTerkirimCount = baseStatsData.filter((d) => d.status === "TERKIRIM").length;
+  const totalReturCount = baseStatsData.filter((d) => d.status === "RETUR").length;
+
+  const formattedDateIso = selectedDate ? format(selectedDate, "yyyy-MM-dd") : null;
+  const formattedDateId = selectedDate ? format(selectedDate, "dd-MM-yyyy") : null;
+
+  const filteredData = deliveries.filter((item) => {
     const matchSearch =
       item.noResi.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.noPolisi.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -47,9 +71,13 @@ const PengirimanDataPage: React.FC = () => {
       item.alamatWp.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchStatus = statusFilter === "ALL" || item.status === statusFilter;
-    const matchSamsat = samsatFilter === "ALL" || item.samsat.includes(samsatFilter);
+    const matchDate =
+      !selectedDate ||
+      (item.tanggalKirim &&
+        (item.tanggalKirim.includes(formattedDateIso!) ||
+          item.tanggalKirim.includes(formattedDateId!)));
 
-    return matchSearch && matchStatus && matchSamsat;
+    return matchSearch && matchStatus && matchDate;
   });
 
   const totalItems = filteredData.length;
@@ -64,14 +92,14 @@ const PengirimanDataPage: React.FC = () => {
       case "RETUR":
         return <Badge className="bg-[#dc2626] hover:bg-[#991b1b] text-white font-medium text-[11px] px-2.5 py-0.5">Retur / Gagal</Badge>;
       case "PENDING":
-        return <Badge className="bg-amber-500 hover:bg-amber-600 text-white font-medium text-[11px] px-2.5 py-0.5">Menunggu Kirim</Badge>;
+        return <Badge className="bg-amber-500 hover:bg-amber-600 text-white font-medium text-[11px] px-2.5 py-0.5">Menunggu Pengambilan</Badge>;
       default:
         return <Badge variant="secondary">{status}</Badge>;
     }
   };
 
   return (
-    <div className="space-y-6 w-full font-sans">
+    <div className="space-y-6 w-full font-sans pb-10">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -79,6 +107,109 @@ const PengirimanDataPage: React.FC = () => {
           <p className="type-body-small text-slate-500 dark:text-slate-400 mt-1">
             Daftar lengkap distribusi berkas SKKP dan pelacakan status pengiriman ke wajib pajak
           </p>
+        </div>
+      </div>
+
+      {/* 5 Kartu KPI Ringkasan Status Pengiriman (Seragam dengan Menu Cetak SKKP & Dashboard) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 w-full">
+        {/* Card 1: Total Pengiriman */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#08874f] to-[#046138] text-white p-5 shadow-xs border border-emerald-700/50 flex flex-col justify-between min-h-[140px] hover:shadow-md transition-all">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-semibold text-emerald-100 uppercase tracking-wider">
+              Total Pengiriman
+            </p>
+            <div className="w-8 h-8 rounded-lg bg-white/20 backdrop-blur-xs flex items-center justify-center text-white shadow-xs">
+              <Layers size={17} />
+            </div>
+          </div>
+          <div className="mt-3">
+            <h3 className="text-3xl font-extrabold text-white tracking-tight">
+              {totalPengirimanCount.toLocaleString("id-ID")}
+            </h3>
+            <span className="text-[11px] text-emerald-100 font-medium mt-1 block">
+              Total berkas distribusi
+            </span>
+          </div>
+        </div>
+
+        {/* Card 2: Menunggu Pengambilan */}
+        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-xs p-5 flex flex-col justify-between min-h-[140px] hover:shadow-sm transition-all">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              Menunggu Pengambilan
+            </p>
+            <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-[#08874f] dark:text-emerald-400 flex items-center justify-center">
+              <Clock size={17} />
+            </div>
+          </div>
+          <div className="mt-3">
+            <h3 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+              {totalMenungguCount.toLocaleString("id-ID")}
+            </h3>
+            <span className="text-[11px] text-slate-400 dark:text-slate-400 font-medium mt-1 block">
+              Berkas siap dijemput kurir
+            </span>
+          </div>
+        </div>
+
+        {/* Card 3: Dalam Perjalanan */}
+        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-xs p-5 flex flex-col justify-between min-h-[140px] hover:shadow-sm transition-all">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              Dalam Perjalanan
+            </p>
+            <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-[#08874f] dark:text-emerald-400 flex items-center justify-center">
+              <Truck size={17} />
+            </div>
+          </div>
+          <div className="mt-3">
+            <h3 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+              {totalProsesCount.toLocaleString("id-ID")}
+            </h3>
+            <span className="text-[11px] text-slate-400 dark:text-slate-400 font-medium mt-1 block">
+              Berkas dalam kurir logistik
+            </span>
+          </div>
+        </div>
+
+        {/* Card 4: Terkirim */}
+        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-xs p-5 flex flex-col justify-between min-h-[140px] hover:shadow-sm transition-all">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              Terkirim
+            </p>
+            <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-[#08874f] dark:text-emerald-400 flex items-center justify-center">
+              <CheckCircle2 size={17} />
+            </div>
+          </div>
+          <div className="mt-3">
+            <h3 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+              {totalTerkirimCount.toLocaleString("id-ID")}
+            </h3>
+            <span className="text-[11px] text-slate-400 dark:text-slate-400 font-medium mt-1 block">
+              Sukses diterima wajib pajak
+            </span>
+          </div>
+        </div>
+
+        {/* Card 5: Retur / Gagal */}
+        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-xs p-5 flex flex-col justify-between min-h-[140px] hover:shadow-sm transition-all">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              Retur / Gagal
+            </p>
+            <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-[#08874f] dark:text-emerald-400 flex items-center justify-center">
+              <AlertCircle size={17} />
+            </div>
+          </div>
+          <div className="mt-3">
+            <h3 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+              {totalReturCount.toLocaleString("id-ID")}
+            </h3>
+            <span className="text-[11px] text-slate-400 dark:text-slate-400 font-medium mt-1 block">
+              Pengiriman gagal / retur
+            </span>
+          </div>
         </div>
       </div>
 
@@ -98,7 +229,21 @@ const PengirimanDataPage: React.FC = () => {
 
           <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
             <Filter size={15} className="text-[#08874f] dark:text-emerald-400" />
+
+            {/* Date Picker Filter */}
+            <div className="w-full sm:w-44">
+              <DatePicker
+                value={selectedDate}
+                onChangeDate={(d) => {
+                  setSelectedDate(d);
+                  setCurrentPage(1);
+                }}
+                placeholder="Pilih Tanggal"
+                buttonClassName="h-[38px] text-xs py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700"
+              />
+            </div>
             
+            {/* Status Filter */}
             <div className="relative">
               <select
                 className="appearance-none bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs rounded-xl px-3.5 py-2 pr-8 focus:outline-none focus:ring-1 focus:ring-[#08874f] focus:border-[#08874f] transition-all cursor-pointer font-medium"
@@ -109,9 +254,9 @@ const PengirimanDataPage: React.FC = () => {
                 }}
               >
                 <option value="ALL">Semua Status</option>
-                <option value="TERKIRIM">Terkirim</option>
+                <option value="PENDING">Menunggu Pengambilan</option>
                 <option value="DALAM_PROSES">Dalam Perjalanan</option>
-                <option value="PENDING">Menunggu Kirim</option>
+                <option value="TERKIRIM">Terkirim</option>
                 <option value="RETUR">Retur / Gagal</option>
               </select>
               <ChevronDown
@@ -120,28 +265,22 @@ const PengirimanDataPage: React.FC = () => {
               />
             </div>
 
-            <div className="relative">
-              <select
-                className="appearance-none bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs rounded-xl px-3.5 py-2 pr-8 focus:outline-none focus:ring-1 focus:ring-[#08874f] focus:border-[#08874f] transition-all cursor-pointer font-medium"
-                value={samsatFilter}
-                onChange={(e) => {
-                  setSamsatFilter(e.target.value);
+            {/* Tombol Reset Filter */}
+            {(searchTerm || statusFilter !== "ALL" || selectedDate) && (
+              <Button
+                variant="tertiary"
+                size="sm"
+                onClick={() => {
+                  setSearchTerm("");
+                  setStatusFilter("ALL");
+                  setSelectedDate(undefined);
                   setCurrentPage(1);
                 }}
+                className="text-xs"
               >
-                <option value="ALL">Semua Samsat</option>
-                <option value="Bandung">Samsat Bandung</option>
-                <option value="Bogor">Samsat Bogor</option>
-                <option value="Bekasi">Samsat Bekasi</option>
-                <option value="Cirebon">Samsat Cirebon</option>
-                <option value="Karawang">Samsat Karawang</option>
-                <option value="Tasikmalaya">Samsat Tasikmalaya</option>
-              </select>
-              <ChevronDown
-                size={14}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#08874f] dark:text-emerald-400 stroke-[2.2] pointer-events-none"
-              />
-            </div>
+                Reset Filter
+              </Button>
+            )}
           </div>
         </div>
 
@@ -299,20 +438,23 @@ const PengirimanDataPage: React.FC = () => {
             />
           </div>
 
-          <DialogFooter className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-            <Button
-              variant="secondary"
+          {/* Tombol Aksi Full Width 2 Button Sesuai Gambar Referensi */}
+          <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-100 dark:border-slate-800 w-full">
+            <button
+              type="button"
               onClick={() => setIsAddModalOpen(false)}
+              className="w-full h-11 border border-[#08874f] bg-white dark:bg-slate-900 text-[#08874f] dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-slate-800 font-semibold text-sm rounded-lg transition-all flex items-center justify-center cursor-pointer shadow-2xs"
             >
-              Batal
-            </Button>
-            <Button
-              variant="primary"
+              Kembali
+            </button>
+            <button
+              type="button"
               onClick={() => setIsAddModalOpen(false)}
+              className="w-full h-11 bg-[#08874f] hover:bg-[#06683d] text-white font-semibold text-sm rounded-lg transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer"
             >
               Simpan Data Kiriman
-            </Button>
-          </DialogFooter>
+            </button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

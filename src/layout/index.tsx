@@ -40,7 +40,7 @@ const Layout: React.FC<TLayoutProps> = ({ children }) => {
             <button
               onClick={handleToggleMenu}
               className="p-2 -ml-2 rounded-lg text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-              title="Buka / Tutup Sidebar"
+              title={isExpanded ? "Lepas Kunci (Auto-Collapse Sidebar)" : "Kunci Sidebar Terbuka"}
             >
               <Menu size={20} className="stroke-[2.2]" />
             </button>

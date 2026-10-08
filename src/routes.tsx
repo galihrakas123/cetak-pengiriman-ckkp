@@ -114,6 +114,22 @@ export const routes: TRoute[] = [
   },
   {
     exact: true,
+    layout: Layout,
+    guard: AuthGuard,
+    path: "/manajemen-user",
+    role: "all",
+    element: React.lazy(() => import("./pages/manajemen-user")),
+  },
+  {
+    exact: true,
+    layout: Layout,
+    guard: AuthGuard,
+    path: "/users",
+    role: "all",
+    element: React.lazy(() => import("./pages/manajemen-user")),
+  },
+  {
+    exact: true,
     guard: AuthGuard,
     layout: Layout,
     path: "/logout",

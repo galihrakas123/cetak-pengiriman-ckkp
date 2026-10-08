@@ -65,7 +65,7 @@ const PengirimanTrackingPage: React.FC = () => {
         return (
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border border-amber-400 text-amber-600 bg-amber-50 dark:bg-amber-950/60 dark:text-amber-400 dark:border-amber-600 shadow-2xs">
             <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-            Menunggu Kirim
+            Menunggu Pengambilan
           </span>
         );
       case "RETUR":

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { Navigation, Plus, Minus, Layers, Check } from "lucide-react";
+import { Navigation, Plus, Minus, Layers, Check, Compass, Clock, Sparkles } from "lucide-react";
 import { DeliveryRecord } from "@/types";
 
 /**
@@ -61,6 +61,60 @@ interface TrackingMapProps {
   defaultStyleId?: string;
 }
 
+/**
+ * Fallback rute jalan raya arteri Bandung jika koneksi offline/timeout
+ * Melewati: Jl. Gunung Batu -> Pasteur (Dr. Djunjunan) -> Flyover Pasupati -> Gasibu -> Diponegoro -> Riau (RE Martadinata)
+ */
+const FALLBACK_BANDUNG_ROAD: [number, number][] = [
+  [-6.8850, 107.5620], // Samsat Cimindi / Pajajaran
+  [-6.8885, 107.5662], // Jl. Gunung Batu
+  [-6.8918, 107.5735], // Bundaran Cimindi ke Pasteur
+  [-6.8942, 107.5815], // Jl. Dr. Djunjunan (Pasteur Barat)
+  [-6.8961, 107.5898], // Depan BTC Fashion Mall
+  [-6.8988, 107.5975], // Flyover Pasupati Barat
+  [-6.9004, 107.6042], // Flyover Pasupati atas Cihampelas
+  [-6.9015, 107.6108], // Atas Tamansari / ITB
+  [-6.9005, 107.6178], // Turunan Gasibu / Gedung Sate
+  [-6.9021, 107.6202], // Jl. Sentot Alibasya / Diponegoro
+  [-6.9055, 107.6241], // Menuju Cimanuk / Cilaki
+  [-6.9085, 107.6280], // Masuk Jl. RE Martadinata (Riau)
+  [-6.9110, 107.6320], // Alamat Tujuan Wajib Pajak
+];
+
+// Helper untuk mengambil rute jaringan jalan raya sesungguhnya via OSRM Driving Engine
+async function calculateBestRoadRoute(
+  origin: [number, number],
+  dest: [number, number]
+): Promise<{ coordinates: [number, number][]; distanceKm: number; durationMin: number } | null> {
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 4000);
+
+    const url = `https://router.project-osrm.org/route/v1/driving/${origin[1]},${origin[0]};${dest[1]},${dest[0]}?overview=full&geometries=geojson`;
+    const res = await fetch(url, { signal: controller.signal });
+    clearTimeout(timer);
+
+    if (res.ok) {
+      const data = await res.json();
+      if (data.code === "Ok" && data.routes && data.routes.length > 0) {
+        const route = data.routes[0];
+        // Konversi dari GeoJSON [lng, lat] ke Leaflet [lat, lng]
+        const coords: [number, number][] = route.geometry.coordinates.map(
+          ([lng, lat]: [number, number]) => [lat, lng]
+        );
+        return {
+          coordinates: coords,
+          distanceKm: Math.round((route.distance / 1000) * 10) / 10,
+          durationMin: Math.round(route.duration / 60),
+        };
+      }
+    }
+  } catch (e) {
+    console.warn("OSRM road routing fallback active:", e);
+  }
+  return null;
+}
+
 export const TrackingMap: React.FC<TrackingMapProps> = ({
   delivery,
   defaultStyleId = "esri-street"
@@ -68,13 +122,26 @@ export const TrackingMap: React.FC<TrackingMapProps> = ({
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const activeTileLayerRef = useRef<L.TileLayer | null>(null);
+  const courierCoordRef = useRef<[number, number]>([-6.8985, 107.6010]);
+  const fullRouteBoundsRef = useRef<L.LatLngBounds | null>(null);
 
   const [currentStyleId, setCurrentStyleId] = useState<string>(defaultStyleId);
   const [isStyleMenuOpen, setIsStyleMenuOpen] = useState<boolean>(false);
+  const [routeStats, setRouteStats] = useState<{
+    distanceKm: number;
+    durationMin: number;
+    isRealRoute: boolean;
+  }>({
+    distanceKm: 13.0,
+    durationMin: 14,
+    isRealRoute: true,
+  });
 
-  // Inisialisasi Peta & Rute
+  // Inisialisasi Peta & Rute Jalan Raya
   useEffect(() => {
     if (!mapContainerRef.current) return;
+
+    let isMounted = true;
 
     // Bersihkan instance lama jika ada
     if (mapInstanceRef.current) {
@@ -82,59 +149,27 @@ export const TrackingMap: React.FC<TrackingMapProps> = ({
       mapInstanceRef.current = null;
     }
 
-    // Tentukan koordinat origin, kurir, dan destination berdasarkan lokasi samsat
+    // Tentukan koordinat origin dan destination berdasarkan lokasi samsat
     let originCoord: [number, number] = [-6.8850, 107.5620]; // Default: Bandung Barat
     let destCoord: [number, number] = [-6.9110, 107.6320];   // Default: Jl. Riau Bandung
-    let courierCoord: [number, number] = [-6.8985, 107.6010]; // Titik kurir di rute
 
     if (delivery.samsat.toLowerCase().includes("bogor")) {
       originCoord = [-6.5971, 106.7972];
       destCoord = [-6.5820, 106.8150];
-      courierCoord = [-6.5890, 106.8060];
     } else if (delivery.samsat.toLowerCase().includes("bekasi")) {
       originCoord = [-6.2383, 106.9756];
       destCoord = [-6.2250, 107.0120];
-      courierCoord = [-6.2310, 106.9930];
     } else if (delivery.samsat.toLowerCase().includes("cirebon")) {
       originCoord = [-6.7320, 108.5520];
       destCoord = [-6.7110, 108.5680];
-      courierCoord = [-6.7210, 108.5600];
     }
-
-    if (delivery.status === "TERKIRIM") {
-      courierCoord = destCoord;
-    }
-
-    // Waypoints rute jalan yang halus
-    const fullRoute: [number, number][] = [
-      originCoord,
-      [
-        originCoord[0] + (destCoord[0] - originCoord[0]) * 0.25 + 0.005,
-        originCoord[1] + (destCoord[1] - originCoord[1]) * 0.25 - 0.003,
-      ],
-      courierCoord,
-      [
-        courierCoord[0] + (destCoord[0] - courierCoord[0]) * 0.5 - 0.004,
-        courierCoord[1] + (destCoord[1] - courierCoord[1]) * 0.5 + 0.005,
-      ],
-      destCoord,
-    ];
-
-    const completedRoute: [number, number][] = [
-      originCoord,
-      [
-        originCoord[0] + (destCoord[0] - originCoord[0]) * 0.25 + 0.005,
-        originCoord[1] + (destCoord[1] - originCoord[1]) * 0.25 - 0.003,
-      ],
-      courierCoord,
-    ];
 
     // Inisialisasi peta Leaflet
     const map = L.map(mapContainerRef.current, {
       zoomControl: false,
       attributionControl: false,
       scrollWheelZoom: true,
-    }).setView(courierCoord, 14);
+    }).setView(originCoord, 13);
 
     mapInstanceRef.current = map;
 
@@ -146,130 +181,163 @@ export const TrackingMap: React.FC<TrackingMapProps> = ({
 
     activeTileLayerRef.current = tileLayer;
 
-    // 1. Gambar Polyline Sisa Rute (Abu-abu Putus-putus) jika belum terkirim
-    if (delivery.status !== "TERKIRIM") {
-      L.polyline(fullRoute, {
-        color: "#94a3b8",
-        weight: 5,
-        opacity: 0.7,
-        dashArray: "8, 8",
+    // Kalkulasikan rute jalan raya terbaik via OSRM (Network Roads)
+    const renderRoadRoute = async () => {
+      const roadData = await calculateBestRoadRoute(originCoord, destCoord);
+      if (!isMounted) return;
+
+      const fullRoute: [number, number][] =
+        roadData && roadData.coordinates.length > 5
+          ? roadData.coordinates
+          : FALLBACK_BANDUNG_ROAD;
+
+      const totalDist = roadData?.distanceKm ?? 13.0;
+      const totalDur = roadData?.durationMin ?? 14;
+
+      setRouteStats({
+        distanceKm: totalDist,
+        durationMin: totalDur,
+        isRealRoute: Boolean(roadData),
+      });
+
+      // Tentukan posisi kurir pada segmen jalan raya yang presisi
+      const totalPoints = fullRoute.length;
+      let courierIndex = Math.floor(totalPoints * 0.58); // Kurir di 58% rute jalan raya (misal di Flyover Pasupati)
+      if (delivery.status === "TERKIRIM") {
+        courierIndex = totalPoints - 1;
+      }
+
+      const courierCoord = fullRoute[courierIndex];
+      courierCoordRef.current = courierCoord;
+
+      const completedRoute = fullRoute.slice(0, courierIndex + 1);
+      const remainingRoute = fullRoute.slice(courierIndex);
+
+      // 1. Gambar Polyline Sisa Rute (Abu-abu putus-putus) jika belum terkirim
+      if (delivery.status !== "TERKIRIM") {
+        L.polyline(remainingRoute, {
+          color: "#94a3b8",
+          weight: 5,
+          opacity: 0.75,
+          dashArray: "8, 8",
+          lineCap: "round",
+          lineJoin: "round",
+        }).addTo(map);
+      }
+
+      // 2. Gambar Polyline Rute Selesai / Dilalui (Hijau Brand #08874f) Mengikuti Jalan Raya
+      L.polyline(delivery.status === "TERKIRIM" ? fullRoute : completedRoute, {
+        color: "#08874f",
+        weight: 6,
+        opacity: 0.95,
         lineCap: "round",
         lineJoin: "round",
       }).addTo(map);
-    }
 
-    // 2. Gambar Polyline Rute Selesai / Dilalui (Hijau Brand #08874f)
-    L.polyline(delivery.status === "TERKIRIM" ? fullRoute : completedRoute, {
-      color: "#08874f",
-      weight: 6,
-      opacity: 0.95,
-      lineCap: "round",
-      lineJoin: "round",
-    }).addTo(map);
-
-    // 3. Custom HTML Icons
-    // Icon Origin (Samsat)
-    const originIcon = L.divIcon({
-      className: "custom-map-marker-origin",
-      html: `
-        <div style="position: relative; display: flex; flex-direction: column; align-items: center; transform: translate(-50%, -100%);">
-          <div style="background: #ffffff; border: 1.5px solid #08874f; padding: 4px 9px; border-radius: 9999px; font-size: 11px; font-weight: 700; color: #08874f; box-shadow: 0 4px 8px rgba(0,0,0,0.15); white-space: nowrap; margin-bottom: 5px;">
-            ${delivery.samsat}
+      // 3. Custom HTML Icons
+      // Icon Origin (Samsat)
+      const originIcon = L.divIcon({
+        className: "custom-map-marker-origin",
+        html: `
+          <div style="position: relative; display: flex; flex-direction: column; align-items: center; transform: translate(-50%, -100%);">
+            <div style="background: #ffffff; border: 1.5px solid #08874f; padding: 4px 9px; border-radius: 9999px; font-size: 11px; font-weight: 700; color: #08874f; box-shadow: 0 4px 8px rgba(0,0,0,0.15); white-space: nowrap; margin-bottom: 5px;">
+              ${delivery.samsat}
+            </div>
+            <div style="width: 26px; height: 26px; background: #08874f; border: 3px solid #ffffff; border-radius: 50%; box-shadow: 0 4px 8px rgba(0,0,0,0.25); display: flex; align-items: center; justify-content: center;">
+              <div style="width: 7px; height: 7px; background: #ffffff; border-radius: 50%;"></div>
+            </div>
           </div>
-          <div style="width: 26px; height: 26px; background: #08874f; border: 3px solid #ffffff; border-radius: 50%; box-shadow: 0 4px 8px rgba(0,0,0,0.25); display: flex; align-items: center; justify-content: center;">
-            <div style="width: 7px; height: 7px; background: #ffffff; border-radius: 50%;"></div>
+        `,
+        iconSize: [0, 0],
+      });
+
+      // Hitung arah hadap mobil (heading angle) sesuai belokan jalan ke depan
+      const nextIdx = Math.min(courierIndex + 3, totalPoints - 1);
+      const currPoint = fullRoute[courierIndex];
+      const nextPoint = fullRoute[nextIdx];
+
+      const deltaX = nextPoint[1] - currPoint[1];
+      const deltaY = -(nextPoint[0] - currPoint[0]);
+
+      let carHeadingDeg = (Math.atan2(deltaX, -deltaY) * 180) / Math.PI;
+      if (isNaN(carHeadingDeg)) carHeadingDeg = 115;
+
+      // Icon Mobil Pengiriman (Menggunakan public/images/mobil2.svg - Mengikuti Sudut Jalan Raya)
+      const courierIcon = L.divIcon({
+        className: "custom-map-marker-courier",
+        iconSize: [52, 52],
+        iconAnchor: [26, 26],
+        html: `
+          <div style="width: 52px; height: 52px; position: relative; display: flex; align-items: center; justify-content: center;">
+            <!-- Radar pulse wave -->
+            <div style="position: absolute; width: 52px; height: 52px; background: rgba(8, 135, 79, 0.25); border-radius: 50%; animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
+            
+            <!-- Outer circular badge with shadow & border -->
+            <div style="position: relative; width: 44px; height: 44px; background: #ffffff; border: 2.5px solid #08874f; border-radius: 50%; box-shadow: 0 4px 12px rgba(8, 135, 79, 0.4); display: flex; align-items: center; justify-content: center; z-index: 10;">
+              <img 
+                src="/images/mobil2.svg" 
+                alt="Mobil Pengiriman" 
+                style="width: 22px; height: 34.4px; min-width: 22px; min-height: 34.4px; object-fit: contain; transform: rotate(${carHeadingDeg}deg); filter: drop-shadow(0 2px 3px rgba(0,0,0,0.25)); display: block;" 
+              />
+            </div>
           </div>
-        </div>
-      `,
-      iconSize: [0, 0],
-    });
+        `,
+      });
 
-    // Hitung arah hadap kendaraan (heading angle) sesuai garis arah rute
-    const prevPoint = completedRoute[completedRoute.length - 2] || originCoord;
-    const currPoint = courierCoord;
-    const nextPoint = destCoord;
-
-    // Delta koordinat layar:
-    // Moncong mobil di mobil2.svg berada di atas (North = 0 deg)
-    // Sumbu X layar bertambah ke Timur (Lng)
-    // Sumbu Y layar bertambah ke Selatan (kebalikan dari Lat)
-    const deltaX = (nextPoint[1] - currPoint[1]) || (currPoint[1] - prevPoint[1]);
-    const deltaY = -((nextPoint[0] - currPoint[0]) || (currPoint[0] - prevPoint[0]));
-
-    // Sudut derajat searah jarum jam dari arah atas (North):
-    let carHeadingDeg = (Math.atan2(deltaX, -deltaY) * 180) / Math.PI;
-    if (isNaN(carHeadingDeg)) carHeadingDeg = 125;
-
-    // Icon Mobil Pengiriman (Menggunakan public/images/mobil2.svg - Proporsional & Mengikuti Arah Jalan)
-    const courierIcon = L.divIcon({
-      className: "custom-map-marker-courier",
-      iconSize: [52, 52],
-      iconAnchor: [26, 26],
-      html: `
-        <div style="width: 52px; height: 52px; position: relative; display: flex; align-items: center; justify-content: center;">
-          <!-- Radar pulse wave -->
-          <div style="position: absolute; width: 52px; height: 52px; background: rgba(8, 135, 79, 0.25); border-radius: 50%; animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
-          
-          <!-- Outer circular badge with shadow & border -->
-          <div style="position: relative; width: 44px; height: 44px; background: #ffffff; border: 2.5px solid #08874f; border-radius: 50%; box-shadow: 0 4px 12px rgba(8, 135, 79, 0.4); display: flex; align-items: center; justify-content: center; z-index: 10;">
-            <img 
-              src="/images/mobil2.svg" 
-              alt="Mobil Pengiriman" 
-              style="width: 22px; height: 34.4px; min-width: 22px; min-height: 34.4px; object-fit: contain; transform: rotate(${carHeadingDeg}deg); filter: drop-shadow(0 2px 3px rgba(0,0,0,0.25)); display: block;" 
-            />
+      // Icon Destination (Wajib Pajak)
+      const destIcon = L.divIcon({
+        className: "custom-map-marker-dest",
+        html: `
+          <div style="position: relative; display: flex; flex-direction: column; align-items: center; transform: translate(-50%, -100%);">
+            <div style="background: #ffffff; border: 1.5px solid #dc2626; padding: 4px 9px; border-radius: 9999px; font-size: 11px; font-weight: 700; color: #dc2626; box-shadow: 0 4px 8px rgba(0,0,0,0.15); white-space: nowrap; margin-bottom: 5px;">
+              Alamat Tujuan: ${delivery.namaWp}
+            </div>
+            <div style="width: 26px; height: 26px; background: #dc2626; border: 3px solid #ffffff; border-radius: 50%; box-shadow: 0 4px 8px rgba(0,0,0,0.25); display: flex; align-items: center; justify-content: center;">
+              <div style="width: 7px; height: 7px; background: #ffffff; border-radius: 50%;"></div>
+            </div>
           </div>
-        </div>
-      `,
-    });
+        `,
+        iconSize: [0, 0],
+      });
 
-    // Icon Destination (Wajib Pajak)
-    const destIcon = L.divIcon({
-      className: "custom-map-marker-dest",
-      html: `
-        <div style="position: relative; display: flex; flex-direction: column; align-items: center; transform: translate(-50%, -100%);">
-          <div style="background: #ffffff; border: 1.5px solid #dc2626; padding: 4px 9px; border-radius: 9999px; font-size: 11px; font-weight: 700; color: #dc2626; box-shadow: 0 4px 8px rgba(0,0,0,0.15); white-space: nowrap; margin-bottom: 5px;">
-            Alamat Tujuan: ${delivery.namaWp}
-          </div>
-          <div style="width: 26px; height: 26px; background: #dc2626; border: 3px solid #ffffff; border-radius: 50%; box-shadow: 0 4px 8px rgba(0,0,0,0.25); display: flex; align-items: center; justify-content: center;">
-            <div style="width: 7px; height: 7px; background: #ffffff; border-radius: 50%;"></div>
-          </div>
-        </div>
-      `,
-      iconSize: [0, 0],
-    });
-
-    // Tambahkan Markers
-    const originMarker = L.marker(originCoord, { icon: originIcon }).addTo(map);
-    originMarker.bindPopup(`
-      <div style="font-family: Roboto, sans-serif; font-size: 12px; line-height: 1.4; padding: 2px;">
-        <strong style="color: #08874f; font-size: 13px;">${delivery.samsat}</strong><br/>
-        <span style="color: #64748b;">Titik Berkas Diterbitkan & Diserahkan ke Ekspedisi</span>
-      </div>
-    `);
-
-    if (delivery.status !== "TERKIRIM") {
-      const courierMarker = L.marker(courierCoord, { icon: courierIcon }).addTo(map);
-      courierMarker.bindPopup(`
+      // Tambahkan Markers
+      const originMarker = L.marker(originCoord, { icon: originIcon }).addTo(map);
+      originMarker.bindPopup(`
         <div style="font-family: Roboto, sans-serif; font-size: 12px; line-height: 1.4; padding: 2px;">
-          <strong style="color: #08874f; font-size: 13px;">Kurir: ${delivery.kurirNama || "Kurir Rekanan"}</strong><br/>
-          <span style="color: #64748b;">Status: Dalam Perjalanan Menuju Alamat</span>
+          <strong style="color: #08874f; font-size: 13px;">${delivery.samsat}</strong><br/>
+          <span style="color: #64748b;">Titik Berkas Diterbitkan & Diserahkan ke Ekspedisi</span>
         </div>
       `);
-    }
 
-    const destMarker = L.marker(destCoord, { icon: destIcon }).addTo(map);
-    destMarker.bindPopup(`
-      <div style="font-family: Roboto, sans-serif; font-size: 12px; line-height: 1.4; padding: 2px;">
-        <strong style="color: #0f172a; font-size: 13px;">${delivery.namaWp}</strong><br/>
-        <span style="color: #64748b;">${delivery.alamatWp}</span>
-      </div>
-    `);
+      if (delivery.status !== "TERKIRIM") {
+        const courierMarker = L.marker(courierCoord, { icon: courierIcon }).addTo(map);
+        courierMarker.bindPopup(`
+          <div style="font-family: Roboto, sans-serif; font-size: 12px; line-height: 1.4; padding: 2px;">
+            <strong style="color: #08874f; font-size: 13px;">Kurir: ${delivery.kurirNama || "Kurir Rekanan"}</strong><br/>
+            <span style="color: #64748b;">Status: Dalam Perjalanan Menuju Alamat</span><br/>
+            <span style="color: #08874f; font-weight: 600;">Jalur: Mengikuti Jaringan Jalan Raya Arteri</span>
+          </div>
+        `);
+      }
 
-    // Fit bounds agar seluruh rute terlihat proporsional
-    const bounds = L.latLngBounds(fullRoute);
-    map.fitBounds(bounds, { padding: [70, 70] });
+      const destMarker = L.marker(destCoord, { icon: destIcon }).addTo(map);
+      destMarker.bindPopup(`
+        <div style="font-family: Roboto, sans-serif; font-size: 12px; line-height: 1.4; padding: 2px;">
+          <strong style="color: #0f172a; font-size: 13px;">${delivery.namaWp}</strong><br/>
+          <span style="color: #64748b;">${delivery.alamatWp}</span>
+        </div>
+      `);
+
+      // Fit bounds agar seluruh rute jalan raya terlihat proporsional
+      const bounds = L.latLngBounds(fullRoute);
+      fullRouteBoundsRef.current = bounds;
+      map.fitBounds(bounds, { padding: [70, 70] });
+    };
+
+    renderRoadRoute();
 
     return () => {
+      isMounted = false;
       map.remove();
       mapInstanceRef.current = null;
     };
@@ -306,7 +374,11 @@ export const TrackingMap: React.FC<TrackingMapProps> = ({
 
   const handleReCenter = () => {
     if (!mapInstanceRef.current) return;
-    mapInstanceRef.current.setView([-6.8985, 107.6010], 14);
+    if (fullRouteBoundsRef.current) {
+      mapInstanceRef.current.fitBounds(fullRouteBoundsRef.current, { padding: [70, 70] });
+    } else {
+      mapInstanceRef.current.setView(courierCoordRef.current, 14);
+    }
   };
 
   return (
@@ -390,6 +462,39 @@ export const TrackingMap: React.FC<TrackingMapProps> = ({
         >
           <Minus size={18} />
         </button>
+      </div>
+
+      {/* Floating Info Card Rute Terbaik (Pojok Kiri Bawah) */}
+      <div className="absolute bottom-4 left-4 z-20 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/90 dark:border-slate-800 rounded-2xl p-3.5 shadow-lg max-w-xs transition-all pointer-events-auto">
+        <div className="flex items-center gap-2.5 mb-2">
+          <div className="w-7 h-7 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-[#08874f] dark:text-emerald-400 flex items-center justify-center">
+            <Compass size={15} className="stroke-[2.4]" />
+          </div>
+          <div>
+            <span className="text-[11px] font-bold text-slate-800 dark:text-white uppercase tracking-wider block leading-tight">
+              Rute Jalan Terbaik
+            </span>
+            <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
+              <Sparkles size={10} />
+              {routeStats.isRealRoute ? "Kalkulasi Jalan Raya Aktif" : "Jalur Arteri Kota"}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4 pt-2 border-t border-slate-100 dark:border-slate-800 text-xs">
+          <div className="flex items-center gap-1.5">
+            <span className="text-slate-400 text-[11px]">Jarak Rute:</span>
+            <span className="font-bold font-mono text-slate-900 dark:text-white">
+              {routeStats.distanceKm} km
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Clock size={12} className="text-[#08874f] dark:text-emerald-400 stroke-[2.5]" />
+            <span className="font-semibold text-slate-700 dark:text-slate-200">
+              ~{routeStats.durationMin} mnt
+            </span>
+          </div>
+        </div>
       </div>
     </div>
   );
