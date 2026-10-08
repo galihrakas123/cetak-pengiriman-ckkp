@@ -55,16 +55,16 @@ const LoginPage = () => {
   document.title = "Login" + BASE_TITLE;
 
   return (
-    <div className="w-screen h-screen overflow-hidden flex flex-col items-center justify-center bg-[#f0f2f5]">
-      <div className="bg-white p-8 rounded-2xl border border-slate-200/80 shadow-md w-[360px] md:w-[420px] space-y-6">
+    <div className="w-screen h-screen overflow-hidden flex flex-col items-center justify-center bg-[#f0f2f5] dark:bg-slate-950 transition-colors">
+      <div className="bg-white dark:bg-slate-900 p-8 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-md w-[360px] md:w-[420px] space-y-6">
         <div className="text-center space-y-2">
           <img
             src="/images/logo-login.png"
             alt="Logo Opsen"
             className="text-center mx-auto max-h-14 object-contain"
           />
-          <h2 className="type-title-large text-slate-900 font-bold tracking-tight">Masuk ke Sistem</h2>
-          <p className="type-body-small text-slate-500">Monitoring Pengiriman Berkas SKKP</p>
+          <h2 className="type-title-large text-slate-900 dark:text-white font-bold tracking-tight">Masuk ke Sistem</h2>
+          <p className="type-body-small text-slate-500 dark:text-slate-400">Monitoring Pengiriman Berkas SKKP</p>
         </div>
 
         <form
@@ -73,23 +73,21 @@ const LoginPage = () => {
         >
           <Input
             label="Username"
-            helperText="Masukkan username akun Anda"
-            placeholder="Text Placeholder"
-            prefixIcon={<Mail size={18} />}
-            errorMessage={errors.username ? "Mohon Masukan Username !" : undefined}
+            placeholder="Masukkan username akun"
+            prefixIcon={<Mail size={16} />}
+            errorMessage={errors.username ? "Mohon masukkan Username!" : undefined}
             isError={Boolean(errors.username)}
             {...register("username", { required: true })}
           />
 
           <Input
             label="Kata Sandi"
-            helperText="Masukkan kata sandi terdaftar"
-            placeholder="Text Placeholder"
+            placeholder="Masukkan kata sandi akun"
             type={showPassword ? "text" : "password"}
-            prefixIcon={<Lock size={18} />}
-            suffixIcon={showPassword ? <Eye size={18} /> : <EyeOff size={18} />}
+            prefixIcon={<Lock size={16} />}
+            suffixIcon={showPassword ? <Eye size={16} /> : <EyeOff size={16} />}
             onSuffixClick={() => setShowPassword(!showPassword)}
-            errorMessage={errors.password ? "Mohon Masukan Kata Sandi !" : undefined}
+            errorMessage={errors.password ? "Mohon masukkan Kata Sandi!" : undefined}
             isError={Boolean(errors.password)}
             {...register("password", { required: true })}
           />

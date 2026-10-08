@@ -12,7 +12,7 @@ export const Searchbar = React.forwardRef<HTMLInputElement, SearchbarProps>(
     return (
       <div
         className={cn(
-          "flex items-center justify-between rounded-xl border border-slate-200 dark:border-slate-700 bg-[#f8f9fa] dark:bg-slate-900 p-1.5 shadow-2xs transition-all focus-within:border-[#08874f] focus-within:ring-1 focus-within:ring-[#08874f]",
+          "flex items-center justify-between rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 p-1 shadow-2xs transition-all focus-within:border-[#08874f] focus-within:ring-1 focus-within:ring-[#08874f] focus-within:bg-white dark:focus-within:bg-slate-900",
           containerClassName
         )}
       >

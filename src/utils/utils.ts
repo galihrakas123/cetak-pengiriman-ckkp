@@ -1,48 +1,67 @@
 export const customStylesInputWithoutRounded = {
-  control: (provided, state) => ({
+  control: (provided: any, state: any) => {
+    const isDark = typeof document !== "undefined" && document.documentElement.classList.contains("dark");
+    return {
+      ...provided,
+      backgroundColor: state.isDisabled
+        ? (isDark ? "#1e293b" : "#f1f5f9")
+        : (isDark ? "#0f172a" : "#f8fafc"),
+      color: state.isDisabled ? "#64748b" : (isDark ? "#f1f5f9" : "#334155"),
+      borderRadius: "0.75rem",
+      border: state.isFocused
+        ? "1px solid #08874f"
+        : (isDark ? "1px solid #334155" : "1px solid #e2e8f0"),
+      boxShadow: state.isFocused ? "0 0 0 1px #08874f" : "none",
+      minWidth: "200px",
+      minHeight: "40px",
+      cursor: state.isDisabled ? "not-allowed" : "pointer",
+      fontSize: "12px",
+      fontWeight: "500",
+      transition: "all 0.15s ease",
+    };
+  },
+  singleValue: (provided: any, state: any) => {
+    const isDark = typeof document !== "undefined" && document.documentElement.classList.contains("dark");
+    return {
+      ...provided,
+      color: state.isDisabled ? "#64748b" : (isDark ? "#f1f5f9" : "#334155"),
+      fontSize: "12px",
+      fontWeight: "500",
+    };
+  },
+  menu: (provided: any) => {
+    const isDark = typeof document !== "undefined" && document.documentElement.classList.contains("dark");
+    return {
+      ...provided,
+      backgroundColor: isDark ? "#1e293b" : "#ffffff",
+      minWidth: "155px",
+      borderRadius: "0.75rem",
+      border: isDark ? "1px solid #334155" : "1px solid #e2e8f0",
+      boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+      zIndex: "999",
+      overflow: "hidden",
+    };
+  },
+  option: (provided: any, state: any) => {
+    const isDark = typeof document !== "undefined" && document.documentElement.classList.contains("dark");
+    return {
+      ...provided,
+      backgroundColor: state.isSelected
+        ? "#08874f"
+        : state.isFocused
+          ? (isDark ? "#334155" : "#f1f5f9")
+          : (isDark ? "#1e293b" : "white"),
+      color: state.isSelected ? "white" : (isDark ? "#f1f5f9" : "#334155"),
+      fontSize: "12px",
+      cursor: "pointer",
+    };
+  },
+  dropdownIndicator: (provided: any) => ({
     ...provided,
-    backgroundColor: state.isDisabled
-      ? "var(--muted-foreground)"
-      : "var(--background)",
-    color: state.isDisabled ? "grey" : "var(--foreground)",
-    border: state.isFocused ? "1px solid var(--primary)" : "",
-    boxShadow: state.isFocused ? "1px solid var(--primary)" : 0,
-
-  
-    minWidth: "200px",
-    maxHeight: "auto",
-    cursor: state.isDisabled ? "not-allowed" : "default",
-    whiteSpace: "nowrap",
-    textAlign: "center",
-    fontSize: "14px",
-  }),
-  singleValue: (provided, state) => ({
-    ...provided,
-    color: state.isDisabled ? "grey" : "var(--foreground)",
-  }),
-  menu: (provided) => ({
-    ...provided,
-    minWidth: "155px",
-    borderRadius: "8px",
-    zIndex: "999",
-  }),
-  option: (provided, state) => ({
-    ...provided,
-    whiteSpace: "nowrap", // width option
-    backgroundColor: state.isSelected ? "var(--primary)" : "white",
-    color: state.isSelected ? "white" : "black",
+    color: "#08874f",
     "&:hover": {
-      backgroundColor: state.isSelected ? "var(--primary)" : "#f2f2f2",
-      color: state.isSelected ? "white" : "black",
+      color: "#066a3e",
     },
-    fontSize: "14px",
-    zIndex: "99",
-    textAlign: "center",
-  }),
-  dropdownIndicator: (provided, state) => ({
-    ...provided,
-    color: state.isDisabled ? "grey" : "var(--foreground)",
-    // Warna panah hijau
   }),
 };
 
@@ -545,11 +564,7 @@ export const formatCategoryHariIni = (data) => {
   });
 };
 
-const now = new Date();
-const sevenDaysAgo = new Date();
-sevenDaysAgo.setDate(now.getDate() - 9);
-
-export const fillMissingDates = (data) => {
+export const fillMissingDates = (data: any[]) => {
   const now = new Date();
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(now.getDate() - 7); // Include today in the 7-day range
@@ -557,7 +572,7 @@ export const fillMissingDates = (data) => {
   const dateMap = new Map();
 
   // Populate the map with the existing data
-  data?.forEach((item) => {
+  data?.forEach((item: any) => {
     if (item.tg_pros_bayar) {
       const itemDate = new Date(item.tg_pros_bayar);
       const monthDay = `${itemDate.getMonth() + 1}-${itemDate.getDate()}`;
@@ -573,19 +588,20 @@ export const fillMissingDates = (data) => {
     const [aMonth, aDay] = a.split("-").map(Number);
     const [bMonth, bDay] = b.split("-").map(Number);
     return (
-      new Date(now.getFullYear(), aMonth - 1, aDay) -
-      new Date(now.getFullYear(), bMonth - 1, bDay)
+      new Date(now.getFullYear(), aMonth - 1, aDay).getTime() -
+      new Date(now.getFullYear(), bMonth - 1, bDay).getTime()
     );
   });
 
   if (sortedDates.length > 0) {
     const lastDate = sortedDates[sortedDates.length - 1];
-    lastCumulativeTotalPkb = dateMap.get(lastDate).cumulative_total_pkb;
-    lastCumulativeTotalKbm = dateMap.get(lastDate).cumulative_total_kbm;
+    const lastEntry = dateMap.get(lastDate);
+    lastCumulativeTotalPkb = lastEntry?.cumulative_total_pkb ?? "0";
+    lastCumulativeTotalKbm = lastEntry?.cumulative_total_kbm ?? "0";
   }
 
   // Create the complete data array including missing dates
-  const completeData = [];
+  const completeData: any[] = [];
   for (let d = new Date(sevenDaysAgo); d <= now; d.setDate(d.getDate() + 1)) {
     const monthDay = `${d.getMonth() + 1}-${d.getDate()}`;
     if (dateMap.has(monthDay)) {
@@ -604,19 +620,26 @@ export const fillMissingDates = (data) => {
   return completeData;
 };
 
-export const filterLast7Days = (data) => {
-  return data?.filter((item) => {
+export const filterLast7Days = (data: any[]) => {
+  const currentNow = new Date();
+  const sevenDaysAgoDate = new Date();
+  sevenDaysAgoDate.setDate(currentNow.getDate() - 7);
+
+  return data?.filter((item: any) => {
     if (item.tg_pros_bayar) {
       const itemDate = new Date(item.tg_pros_bayar);
-      if (now.getFullYear() !== itemDate.getFullYear()) {
-        itemDate.setFullYear(now.getFullYear());
+      if (currentNow.getFullYear() !== itemDate.getFullYear()) {
+        itemDate.setFullYear(currentNow.getFullYear());
       }
       const itemDateComparable = new Date(
-        now.getFullYear(),
+        currentNow.getFullYear(),
         itemDate.getMonth(),
         itemDate.getDate(),
       );
-      return itemDateComparable >= sevenDaysAgo && itemDateComparable <= now;
+      return (
+        itemDateComparable.getTime() >= sevenDaysAgoDate.getTime() &&
+        itemDateComparable.getTime() <= currentNow.getTime()
+      );
     }
     return false;
   });

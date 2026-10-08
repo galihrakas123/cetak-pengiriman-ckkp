@@ -49,28 +49,28 @@ const PengirimanTrackingPage: React.FC = () => {
     switch (status) {
       case "TERKIRIM":
         return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border border-[#08874f] text-[#08874f] bg-[#e1f0e8] shadow-2xs">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#08874f]" />
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border border-[#08874f] text-[#08874f] bg-[#e1f0e8] dark:bg-emerald-950/60 dark:text-emerald-400 dark:border-emerald-600 shadow-2xs">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#08874f] dark:bg-emerald-400" />
             Terkirim
           </span>
         );
       case "DALAM_PROSES":
         return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border border-blue-400 text-blue-600 bg-blue-50 shadow-2xs">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border border-blue-400 text-blue-600 bg-blue-50 dark:bg-blue-950/60 dark:text-blue-400 dark:border-blue-600 shadow-2xs">
             <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
             Dalam Perjalanan
           </span>
         );
       case "PENDING":
         return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border border-amber-400 text-amber-600 bg-amber-50 shadow-2xs">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border border-amber-400 text-amber-600 bg-amber-50 dark:bg-amber-950/60 dark:text-amber-400 dark:border-amber-600 shadow-2xs">
             <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
             Menunggu Kirim
           </span>
         );
       case "RETUR":
         return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border border-rose-400 text-rose-600 bg-rose-50 shadow-2xs">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border border-rose-400 text-rose-600 bg-rose-50 dark:bg-rose-950/60 dark:text-rose-400 dark:border-rose-600 shadow-2xs">
             <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
             Retur / Gagal
           </span>
@@ -85,8 +85,8 @@ const PengirimanTrackingPage: React.FC = () => {
       {/* Header Bar dengan Tombol Kembali */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-1">
         <div>
-          <h1 className="type-headline-medium text-slate-800 tracking-tight">Detail Pengiriman & Tracking</h1>
-          <p className="type-body-small text-slate-500 mt-0.5">
+          <h1 className="type-headline-medium text-slate-800 dark:text-white tracking-tight">Detail Pengiriman & Tracking</h1>
+          <p className="type-body-small text-slate-500 dark:text-slate-400 mt-0.5">
             Pelacakan status berkas Surat Ketetapan Kewajiban Pembayaran (SKKP)
           </p>
         </div>
@@ -105,25 +105,25 @@ const PengirimanTrackingPage: React.FC = () => {
         {/* =========================================================================
             PANEL KIRI: Kartu Tunggal Resi, Detail Berkas Lengkap & Tracing Check Point
            ========================================================================= */}
-        <div className="w-full lg:w-[430px] xl:w-[460px] flex-shrink-0 flex flex-col h-full bg-white rounded-3xl border border-slate-200 shadow-xs p-5 overflow-y-auto scroll__primary space-y-5">
+        <div className="w-full lg:w-[430px] xl:w-[460px] flex-shrink-0 flex flex-col h-full bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-xs p-5 overflow-y-auto scroll__primary space-y-5">
           {/* Header Card: Shipping ID & Status Badge */}
-          <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+          <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-700">
             <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-2xl bg-[#e1f0e8] text-[#08874f] flex items-center justify-center flex-shrink-0 shadow-2xs">
+              <div className="w-11 h-11 rounded-2xl bg-[#e1f0e8] dark:bg-emerald-950/60 text-[#08874f] dark:text-emerald-400 flex items-center justify-center flex-shrink-0 shadow-2xs">
                 <Truck size={22} />
               </div>
               <div>
                 <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Shipping ID</p>
                 <div className="flex items-center gap-1.5 mt-0.5">
-                  <h3 className="type-title-small font-bold text-slate-900 font-mono tracking-tight">
+                  <h3 className="type-title-small font-bold text-slate-900 dark:text-white font-mono tracking-tight">
                     #{deliveryData.noResi}
                   </h3>
                   <button
                     onClick={handleCopyResi}
-                    className="text-slate-400 hover:text-[#08874f] p-1 transition-colors cursor-pointer"
+                    className="text-slate-400 hover:text-[#08874f] dark:hover:text-emerald-400 p-1 transition-colors cursor-pointer"
                     title="Salin No Resi"
                   >
-                    {copied ? <Check size={14} className="text-[#08874f]" /> : <Copy size={14} />}
+                    {copied ? <Check size={14} className="text-[#08874f] dark:text-emerald-400" /> : <Copy size={14} />}
                   </button>
                 </div>
               </div>
@@ -134,24 +134,24 @@ const PengirimanTrackingPage: React.FC = () => {
           {/* =========================================================================
               INFORMASI PENGIRIMAN SKKP (Tampilan Bersih & Rapi Tanpa Nested Box)
              ========================================================================= */}
-          <div className="bg-[#f8fafc] rounded-2xl p-4 border border-slate-200/80 space-y-3 shadow-2xs">
-            <div className="flex items-center justify-between pb-2.5 border-b border-slate-200/70">
-              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-                <FileBadge2 size={14} className="text-[#08874f]" />
+          <div className="bg-[#f8fafc] dark:bg-slate-900/60 rounded-2xl p-4 border border-slate-200/80 dark:border-slate-700/80 space-y-3 shadow-2xs">
+            <div className="flex items-center justify-between pb-2.5 border-b border-slate-200/70 dark:border-slate-700/70">
+              <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                <FileBadge2 size={14} className="text-[#08874f] dark:text-emerald-400" />
                 Informasi Pengiriman SKKP
               </span>
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-lg bg-[#e1f0e8] text-[#08874f] font-mono font-bold text-xs tracking-wider border border-[#08874f]/20">
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-lg bg-[#e1f0e8] dark:bg-emerald-950/60 text-[#08874f] dark:text-emerald-400 font-mono font-bold text-xs tracking-wider border border-[#08874f]/20 dark:border-emerald-500/30">
                 {deliveryData.noPolisi}
               </span>
             </div>
 
-            <div className="space-y-2 text-xs divide-y divide-slate-100">
+            <div className="space-y-2 text-xs divide-y divide-slate-100 dark:divide-slate-800">
               {/* Wajib Pajak */}
               <div className="flex items-start justify-between pt-1 pb-1">
                 <span className="text-slate-400 font-medium w-32 flex-shrink-0 flex items-center gap-1.5">
-                  <User size={13} className="text-slate-400" /> Wajib Pajak:
+                  <User size={13} className="text-[#08874f] dark:text-emerald-400" /> Wajib Pajak:
                 </span>
-                <span className="font-semibold text-slate-800 text-right">
+                <span className="font-semibold text-slate-800 dark:text-slate-100 text-right">
                   {deliveryData.namaWp}
                 </span>
               </div>
@@ -159,9 +159,9 @@ const PengirimanTrackingPage: React.FC = () => {
               {/* Alamat Tujuan */}
               <div className="flex items-start justify-between pt-2 pb-1">
                 <span className="text-slate-400 font-medium w-32 flex-shrink-0 flex items-center gap-1.5 pt-0.5">
-                  <MapPin size={13} className="text-slate-400" /> Alamat Tujuan:
+                  <MapPin size={13} className="text-[#08874f] dark:text-emerald-400" /> Alamat Tujuan:
                 </span>
-                <span className="text-slate-700 text-right leading-relaxed">
+                <span className="text-slate-700 dark:text-slate-300 text-right leading-relaxed">
                   {deliveryData.alamatWp}
                 </span>
               </div>
@@ -169,9 +169,9 @@ const PengirimanTrackingPage: React.FC = () => {
               {/* Samsat Asal */}
               <div className="flex items-center justify-between pt-2 pb-1">
                 <span className="text-slate-400 font-medium w-32 flex-shrink-0 flex items-center gap-1.5">
-                  <Building2 size={13} className="text-slate-400" /> Samsat Asal:
+                  <Building2 size={13} className="text-[#08874f] dark:text-emerald-400" /> Samsat Asal:
                 </span>
-                <span className="font-medium text-slate-800 text-right">
+                <span className="font-medium text-slate-800 dark:text-slate-200 text-right">
                   {deliveryData.samsat}
                 </span>
               </div>
@@ -179,9 +179,9 @@ const PengirimanTrackingPage: React.FC = () => {
               {/* Ekspedisi */}
               <div className="flex items-center justify-between pt-2 pb-1">
                 <span className="text-slate-400 font-medium w-32 flex-shrink-0 flex items-center gap-1.5">
-                  <Truck size={13} className="text-slate-400" /> Ekspedisi:
+                  <Truck size={13} className="text-[#08874f] dark:text-emerald-400" /> Ekspedisi:
                 </span>
-                <span className="font-medium text-slate-800 text-right">
+                <span className="font-medium text-slate-800 dark:text-slate-200 text-right">
                   {deliveryData.ekspedisi}
                 </span>
               </div>
@@ -189,9 +189,9 @@ const PengirimanTrackingPage: React.FC = () => {
               {/* Tanggal Kirim */}
               <div className="flex items-center justify-between pt-2">
                 <span className="text-slate-400 font-medium w-32 flex-shrink-0 flex items-center gap-1.5">
-                  <Calendar size={13} className="text-slate-400" /> Tanggal Kirim:
+                  <Calendar size={13} className="text-[#08874f] dark:text-emerald-400" /> Tanggal Kirim:
                 </span>
-                <span className="font-semibold text-slate-700 font-mono text-right">
+                <span className="font-semibold text-slate-700 dark:text-slate-300 font-mono text-right">
                   {deliveryData.tanggalKirim}
                 </span>
               </div>
@@ -203,31 +203,31 @@ const PengirimanTrackingPage: React.FC = () => {
              ========================================================================= */}
           <div className="pt-1 space-y-3.5">
             <div className="flex items-center justify-between pb-1">
-              <h4 className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-                <Clock3 size={14} className="text-[#08874f]" />
+              <h4 className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                <Clock3 size={14} className="text-[#08874f] dark:text-emerald-400" />
                 Tracing Check Point
               </h4>
-              <span className="text-[10px] font-medium text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md">
+              <span className="text-[10px] font-medium text-slate-400 dark:text-slate-300 bg-slate-100 dark:bg-slate-700/60 px-2 py-0.5 rounded-md">
                 {timeline.length} Titik Riwayat
               </span>
             </div>
 
-            <div className="relative pl-6 space-y-4 before:content-[''] before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
+            <div className="relative pl-6 space-y-4 before:content-[''] before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200 dark:before:bg-slate-700">
               {timeline.map((point, idx) => {
                 const isLatest = idx === 0;
                 return (
                   <div key={idx} className="relative flex flex-col gap-1">
                     {/* Bullet dot */}
                     <div 
-                      className={`absolute -left-6 top-0.5 w-4 h-4 rounded-full border-2 border-white flex items-center justify-center shadow-2xs ${
+                      className={`absolute -left-6 top-0.5 w-4 h-4 rounded-full border-2 border-white dark:border-slate-800 flex items-center justify-center shadow-2xs ${
                         isLatest 
-                          ? "bg-[#08874f] ring-4 ring-[#e1f0e8]" 
-                          : "bg-slate-300"
+                          ? "bg-[#08874f] ring-4 ring-[#e1f0e8] dark:ring-emerald-950" 
+                          : "bg-slate-300 dark:bg-slate-600"
                       }`} 
                     />
                     
                     <div className="flex items-center justify-between">
-                      <h5 className={`text-xs font-bold leading-snug ${isLatest ? "text-slate-900" : "text-slate-700"}`}>
+                      <h5 className={`text-xs font-bold leading-snug ${isLatest ? "text-slate-900 dark:text-white" : "text-slate-700 dark:text-slate-300"}`}>
                         {point.status}
                       </h5>
                       <span className="text-[10px] text-slate-400 font-mono font-medium">
@@ -237,8 +237,8 @@ const PengirimanTrackingPage: React.FC = () => {
 
                     <div className={`p-2.5 rounded-xl border text-[11px] leading-relaxed ${
                       isLatest 
-                        ? "bg-[#e1f0e8]/30 border-[#08874f]/20 text-slate-700" 
-                        : "bg-slate-50/70 border-slate-100 text-slate-500"
+                        ? "bg-[#e1f0e8]/30 dark:bg-emerald-950/30 border-[#08874f]/20 dark:border-emerald-500/20 text-slate-700 dark:text-slate-300" 
+                        : "bg-slate-50/70 dark:bg-slate-900/50 border-slate-100 dark:border-slate-800 text-slate-500 dark:text-slate-400"
                     }`}>
                       {point.desc}
                     </div>
@@ -252,7 +252,7 @@ const PengirimanTrackingPage: React.FC = () => {
         {/* =========================================================================
             PANEL KANAN: PETA INTERAKTIF DENGAN IKON MOBIL2.SVG (PROPORSIONAL & TERARAH)
            ========================================================================= */}
-        <div className="flex-1 relative rounded-3xl border border-slate-200/90 overflow-hidden shadow-xs bg-slate-100 min-h-[500px]">
+        <div className="flex-1 relative rounded-3xl border border-slate-200/90 dark:border-slate-700 overflow-hidden shadow-xs bg-slate-100 dark:bg-slate-900 min-h-[500px]">
           <TrackingMap delivery={deliveryData} />
         </div>
       </div>

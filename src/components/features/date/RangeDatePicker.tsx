@@ -62,19 +62,18 @@ export function RangeDatePicker({
       <div className={cn("self-end w-full", className)}>
         <Popover>
           <PopoverTrigger asChild>
-            <div>
+            <div className="grid gap-1.5 w-full">
               {label && <Label>{label}</Label>}
               <Button
                 id="date"
                 variant={"outline"}
                 className={cn(
-                  "justify-start text-left font-normal w-full",
-                  !date && "text-muted-foreground"
+                  "h-10 justify-start text-left font-medium text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-white px-3.5 transition-all w-full shadow-none",
+                  !date && "text-slate-400"
                 )}
-                style={style}
                 disabled={disabled}
               >
-                <CalendarIcon className="mr-2 h-4 w-4" />
+                <CalendarIcon className="mr-2 h-3.5 w-3.5 text-[#08874f] dark:text-emerald-400 stroke-[2.2]" />
                 {date?.from ? (
                   date.to ? (
                     <>

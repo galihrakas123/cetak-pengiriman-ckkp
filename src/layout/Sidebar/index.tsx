@@ -117,10 +117,21 @@ const Sidebar: React.FC = () => {
           isExpanded ? "px-2 justify-start" : "justify-center"
         )}
       >
-        <div className="w-10 h-10 rounded-xl bg-[#f8f9fa] dark:bg-slate-800 shadow-2xs border border-slate-200/90 dark:border-slate-700 flex items-center justify-center text-slate-800 dark:text-slate-200 flex-shrink-0 group-hover:scale-105 group-hover:border-[#08874f] transition-all">
-          <Layers size={20} className="text-slate-800 dark:text-slate-200 group-hover:text-[#08874f] stroke-[2.2] transition-colors" />
+        <div
+          className={cn(
+            "w-10 h-10 rounded-xl bg-[#f8f9fa] dark:bg-slate-800 shadow-2xs border border-slate-200/90 dark:border-slate-700 flex items-center justify-center text-slate-800 dark:text-slate-200 flex-shrink-0 transition-all",
+            isExpanded ? "group-hover:scale-105 group-hover:border-[#08874f]" : ""
+          )}
+        >
+          <Layers
+            size={20}
+            className={cn(
+              "text-slate-800 dark:text-slate-200 stroke-[2.2] transition-colors",
+              isExpanded ? "group-hover:text-[#08874f]" : ""
+            )}
+          />
         </div>
-        {isExpanded ? (
+        {isExpanded && (
           <div className="flex flex-col overflow-hidden">
             <span className="text-xs font-bold text-slate-800 dark:text-white tracking-tight whitespace-nowrap group-hover:text-[#08874f] transition-colors">
               DASHBOARD SKKP
@@ -129,10 +140,6 @@ const Sidebar: React.FC = () => {
               Bapenda Jabar
             </span>
           </div>
-        ) : (
-          <span className="absolute left-[calc(100%+14px)] top-1/2 -translate-y-1/2 px-3.5 py-1.5 text-xs font-semibold text-white bg-[#1e293b] rounded-full whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-150 shadow-md z-[999]">
-            Dashboard SKKP
-          </span>
         )}
       </Link>
 

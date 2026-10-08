@@ -4,7 +4,8 @@ import {
   Calendar, 
   Download, 
   Printer,
-  Square
+  Square,
+  ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getRekapSamsat, getSummaryStats } from "@/services/mockData";
@@ -28,8 +29,8 @@ const PengirimanLaporanPage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="type-headline-medium text-slate-800 tracking-tight">Laporan & Rekap Pengiriman</h1>
-          <p className="type-body-small text-slate-500 mt-1">
+          <h1 className="type-headline-medium text-slate-800 dark:text-white tracking-tight">Laporan & Rekap Pengiriman</h1>
+          <p className="type-body-small text-slate-500 dark:text-slate-400 mt-1">
             Rekapitulasi performa dan tingkat keberhasilan pengiriman berkas SKKP per unit kerja
           </p>
         </div>
@@ -44,39 +45,45 @@ const PengirimanLaporanPage: React.FC = () => {
       </div>
 
       {/* Filter Toolbar */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-4 flex flex-wrap items-center justify-between gap-3 w-full">
+      <div className="bg-white dark:bg-slate-800/90 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-xs p-4 flex flex-wrap items-center justify-between gap-3 w-full">
         <div className="flex items-center gap-2">
-          <Calendar size={15} className="text-slate-400" />
-          <span className="text-xs font-semibold text-slate-700">Periode Laporan:</span>
-          <select
-            value={selectedBulan}
-            onChange={(e) => setSelectedBulan(e.target.value)}
-            className="border border-slate-200 rounded-lg text-xs px-3 py-1.5 bg-white text-slate-700 outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer"
-          >
-            <option value="Oktober 2026">Oktober 2026</option>
-            <option value="September 2026">September 2026</option>
-            <option value="Agustus 2026">Agustus 2026</option>
-          </select>
+          <Calendar size={15} className="text-[#08874f] dark:text-emerald-400" />
+          <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wide">Periode:</span>
+          <div className="relative">
+            <select
+              value={selectedBulan}
+              onChange={(e) => setSelectedBulan(e.target.value)}
+              className="appearance-none bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs rounded-xl px-3.5 py-2 pr-8 focus:outline-none focus:ring-1 focus:ring-[#08874f] focus:border-[#08874f] transition-all cursor-pointer font-medium"
+            >
+              <option value="Oktober 2026">Oktober 2026</option>
+              <option value="September 2026">September 2026</option>
+              <option value="Agustus 2026">Agustus 2026</option>
+            </select>
+            <ChevronDown
+              size={14}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#08874f] dark:text-emerald-400 stroke-[2.2] pointer-events-none"
+            />
+          </div>
         </div>
 
         <div className="flex items-center gap-4 text-xs">
-          <span className="text-slate-500">
-            Total Berkas Terdata: <strong className="text-slate-800">{stats.totalPengiriman.toLocaleString("id-ID")}</strong>
+          <span className="text-slate-500 dark:text-slate-400">
+            Total Berkas Terdata: <strong className="text-slate-800 dark:text-white">{stats.totalPengiriman.toLocaleString("id-ID")}</strong>
           </span>
-          <span className="text-slate-500">
-            Rata-rata Sukses: <strong className="text-emerald-600">{stats.tingkatKeberhasilan}</strong>
+          <span className="text-slate-500 dark:text-slate-400">
+            Rata-rata Sukses: <strong className="text-emerald-600 dark:text-emerald-400">{stats.tingkatKeberhasilan}</strong>
           </span>
         </div>
       </div>
 
       {/* Rekap Table with Green Header & Full-Width Pagination */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-5 md:p-6 space-y-4 w-full">
-        <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
-          <Building2 size={16} className="text-[#08874f]" />
-          <h2 className="type-title-medium text-slate-800">Rekapitulasi Performa Wilayah Samsat</h2>
+      <div className="bg-white dark:bg-slate-800/90 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-xs p-5 md:p-6 space-y-4 w-full">
+        <div className="flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-slate-700/60">
+          <Building2 size={16} className="text-[#08874f] dark:text-emerald-400" />
+          <h2 className="type-title-medium text-slate-800 dark:text-white">Rekapitulasi Performa Wilayah Samsat</h2>
         </div>
 
-        <div className="overflow-hidden rounded-xl border border-slate-200/90 w-full shadow-xs">
+        <div className="overflow-hidden rounded-xl border border-slate-200/90 dark:border-slate-700 w-full shadow-xs bg-white dark:bg-slate-900">
           <div className="overflow-x-auto w-full">
             <table className="w-full text-left text-xs border-collapse">
               <thead className="bg-[#08874f] text-white">
@@ -101,25 +108,25 @@ const PengirimanLaporanPage: React.FC = () => {
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 bg-white">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900">
                 {paginatedData.map((item, idx) => (
-                  <tr key={idx} className="hover:bg-slate-50/70 transition-colors">
-                    <td className="py-3.5 px-4 font-medium text-slate-800">
+                  <tr key={idx} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/60 transition-colors">
+                    <td className="py-3.5 px-4 font-medium text-slate-800 dark:text-slate-100">
                       {item.nama}
                     </td>
-                    <td className="py-3.5 px-4 text-right font-semibold text-slate-900">
+                    <td className="py-3.5 px-4 text-right font-semibold text-slate-900 dark:text-white">
                       {item.total.toLocaleString("id-ID")}
                     </td>
-                    <td className="py-3.5 px-4 text-right font-medium text-emerald-600">
+                    <td className="py-3.5 px-4 text-right font-medium text-emerald-600 dark:text-emerald-400">
                       {item.sukses.toLocaleString("id-ID")}
                     </td>
-                    <td className="py-3.5 px-4 text-right text-slate-600">
+                    <td className="py-3.5 px-4 text-right text-slate-600 dark:text-slate-300">
                       {item.proses.toLocaleString("id-ID")}
                     </td>
-                    <td className="py-3.5 px-4 text-right font-medium text-rose-600">
+                    <td className="py-3.5 px-4 text-right font-medium text-rose-600 dark:text-rose-400">
                       {item.gagal.toLocaleString("id-ID")}
                     </td>
-                    <td className="py-3.5 px-4 text-center font-bold text-emerald-600">
+                    <td className="py-3.5 px-4 text-center font-bold text-emerald-600 dark:text-emerald-400">
                       {item.rate}
                     </td>
                   </tr>

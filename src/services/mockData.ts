@@ -254,3 +254,7 @@ export const getTrackingTimeline = (resi?: string): TrackingCheckpoint[] => {
 export const getRekapSamsat = (): RekapSamsat[] => mockRekapSamsat;
 
 export const getWilayahCapaian = (): WilayahCapaian[] => mockWilayahCapaian;
+
+export const addDeliveryRecord = (delivery: DeliveryRecord): void => {
+  mockDeliveries.unshift(delivery);
+};

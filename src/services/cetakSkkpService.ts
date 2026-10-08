@@ -1,4 +1,5 @@
 import { CetakSKKPRecord, CetakStatus, CetakSummaryStats } from "@/types";
+import { addDeliveryRecord } from "./mockData";
 
 /**
  * =====================================================================
@@ -192,7 +193,10 @@ const initialCetakList: CetakSKKPRecord[] = [
     opsiPengiriman: "Pos Indonesia",
     tanggalCetak: "07-10-2026 13:00",
     petugasCetak: "Ahmad Junaedi",
-    statusPengiriman: "PENDING",
+    statusPengiriman: "DALAM_PENGIRIMAN",
+    noResi: "SKKP-2026-882910",
+    ekspedisi: "Pos Indonesia",
+    tanggalKirim: "07-10-2026 13:00",
   },
   {
     id: "CTK-2026-011",
@@ -228,7 +232,10 @@ const initialCetakList: CetakSKKPRecord[] = [
     opsiPengiriman: "Pos Indonesia",
     tanggalCetak: "07-10-2026 13:40",
     petugasCetak: "Rizky Ramadhan",
-    statusPengiriman: "PENDING",
+    statusPengiriman: "DALAM_PENGIRIMAN",
+    noResi: "SKKP-2026-882912",
+    ekspedisi: "Pos Indonesia",
+    tanggalKirim: "07-10-2026 13:40",
   },
 ];
 
@@ -269,8 +276,26 @@ export const cetakSkkpService = {
       );
     }
 
+    const isDalamPengiriman = (st?: string) =>
+      st === "DALAM_PENGIRIMAN" || st === "DIKIRIM" || st === "TERKIRIM";
+
     if (params?.status && params.status !== "ALL") {
-      result = result.filter((item) => item.statusCetak === params.status);
+      if (params.status === "DALAM_PENGIRIMAN" || params.status === "SUDAH_TERKIRIM") {
+        result = result.filter((item) => isDalamPengiriman(item.statusPengiriman));
+      } else if (params.status === "SUDAH_DICETAK" || params.status === "SIAP_KIRIM") {
+        result = result.filter(
+          (item) => item.statusCetak === "SUDAH_DICETAK" && !isDalamPengiriman(item.statusPengiriman)
+        );
+      } else if (params.status === "BELUM_DICETAK") {
+        result = result.filter(
+          (item) => item.statusCetak === "BELUM_DICETAK" && !isDalamPengiriman(item.statusPengiriman)
+        );
+      } else {
+        result = result.filter((item) => item.statusCetak === params.status);
+      }
+    } else {
+      // Default ALL: Data yang berstatus "Dalam Pengiriman" difilter out dari antrean cetak
+      result = result.filter((item) => !isDalamPengiriman(item.statusPengiriman));
     }
 
     if (params?.samsat && params.samsat !== "ALL") {
@@ -311,7 +336,8 @@ export const cetakSkkpService = {
   },
 
   /**
-   * Memproses Pengiriman SKKP setelah berkas dicetak
+   * Memproses Pengiriman SKKP setelah berkas dicetak:
+   * Mengubah status data menjadi "DALAM_PENGIRIMAN" dan menyinkronkan ke modul Tracking
    */
   async prosesKirimSKKP(payload: {
     id: string;
@@ -326,14 +352,48 @@ export const cetakSkkpService = {
       throw new Error("Data berkas SKKP tidak ditemukan.");
     }
 
+    const now = new Date();
+    const formattedNow = `${String(now.getDate()).padStart(2, "0")}-${String(
+      now.getMonth() + 1
+    ).padStart(2, "0")}-${now.getFullYear()} ${String(now.getHours()).padStart(
+      2,
+      "0"
+    )}:${String(now.getMinutes()).padStart(2, "0")}`;
+
     const updated: CetakSKKPRecord = {
       ...cetakDatabase[index],
-      statusPengiriman: "DIKIRIM",
+      statusPengiriman: "DALAM_PENGIRIMAN",
       ekspedisi: payload.ekspedisi,
       noResi: payload.noResi,
+      tanggalKirim: formattedNow,
     };
 
     cetakDatabase[index] = updated;
+
+    // Sinkronkan ke modul Pengiriman & Tracking (mockDeliveries)
+    try {
+      addDeliveryRecord({
+        id: String(Date.now()),
+        noResi: payload.noResi,
+        noPolisi: updated.nopol,
+        namaWp: updated.namaPemilik,
+        alamatWp: updated.alamat || "Jawa Barat",
+        samsat: updated.samsat,
+        ekspedisi: payload.ekspedisi,
+        tanggalKirim: formattedNow.split(" ")[0],
+        status: "DALAM_PROSES",
+        kurirNama: "Kurir " + payload.ekspedisi,
+        kurirPhone: "0812-8829-1001",
+        jarakKm: "12.0 km",
+        estimasiWaktu: "1-2 Hari Kerja",
+        beratBerkas: "1 Berkas SKKP",
+        asalKota: updated.samsat,
+        tujuanKota: updated.alamat?.split(",").pop()?.trim() || "Jawa Barat",
+      });
+    } catch (e) {
+      console.warn("Gagal sinkronisasi data ke mockDeliveries:", e);
+    }
+
     return updated;
   },
 
@@ -367,23 +427,47 @@ export const cetakSkkpService = {
   },
 
   /**
-   * Dapatkan statistik ringkasan cetak
+   * Dapatkan statistik ringkasan cetak (sinkron dengan filter pencarian / wilayah)
    */
-  async fetchCetakStats(): Promise<CetakSummaryStats> {
-    await delay(200);
+  async fetchCetakStats(params?: FetchCetakFilterParams): Promise<CetakSummaryStats> {
+    await delay(150);
 
-    const totalPengajuan = cetakDatabase.length;
-    const belumDicetak = cetakDatabase.filter((i) => i.statusCetak === "BELUM_DICETAK").length;
-    const sudahDicetak = cetakDatabase.filter((i) => i.statusCetak === "SUDAH_DICETAK").length;
-    const siapKirim = cetakDatabase.filter(
-      (i) => i.statusCetak === "SUDAH_DICETAK" && i.statusPengiriman !== "DIKIRIM"
+    let base = [...cetakDatabase];
+    if (params?.search) {
+      const q = params.search.toLowerCase().trim();
+      base = base.filter(
+        (item) =>
+          item.nopol.toLowerCase().includes(q) ||
+          item.namaPemilik.toLowerCase().includes(q) ||
+          item.noKohir?.toLowerCase().includes(q) ||
+          item.kodeBayar?.toLowerCase().includes(q)
+      );
+    }
+
+    if (params?.samsat && params.samsat !== "ALL") {
+      base = base.filter((item) => item.samsat.includes(params.samsat!));
+    }
+
+    const isDalamPengiriman = (st?: string) =>
+      st === "DALAM_PENGIRIMAN" || st === "DIKIRIM" || st === "TERKIRIM";
+
+    const totalPengajuan = base.length;
+    const belumDicetak = base.filter(
+      (i) => i.statusCetak === "BELUM_DICETAK" && !isDalamPengiriman(i.statusPengiriman)
     ).length;
+    const dalamPengiriman = base.filter((i) => isDalamPengiriman(i.statusPengiriman)).length;
+    const sudahDicetak = base.filter(
+      (i) => i.statusCetak === "SUDAH_DICETAK" && !isDalamPengiriman(i.statusPengiriman)
+    ).length;
+    const siapKirim = sudahDicetak;
 
     return {
       totalPengajuan,
       belumDicetak,
       sudahDicetak,
       siapKirim,
+      sudahTerkirim: dalamPengiriman,
+      dalamPengiriman,
     };
   },
 

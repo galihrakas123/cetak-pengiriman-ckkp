@@ -17,9 +17,9 @@ const buttonVariants = cva(
         
         // Secondary: White bg with green border #08874f, Hover soft green #e1f0e8 with green border, Disable grey border
         secondary:
-          "border border-[#08874f] text-[#08874f] bg-white hover:bg-[#e1f0e8] hover:border-[#08874f] active:scale-[0.98] disabled:border-[#e2e4e8] disabled:bg-[#f8f9fa] disabled:text-[#9ca3af] disabled:opacity-100 shadow-xs",
+          "border border-[#08874f] text-[#08874f] dark:text-emerald-400 bg-white dark:bg-slate-800 hover:bg-[#e1f0e8] dark:hover:bg-emerald-950/50 hover:border-[#08874f] active:scale-[0.98] disabled:border-[#e2e4e8] disabled:bg-[#f8f9fa] disabled:text-[#9ca3af] disabled:opacity-100 shadow-xs",
         outline:
-          "border border-[#08874f] text-[#08874f] bg-white hover:bg-[#e1f0e8] hover:border-[#08874f] active:scale-[0.98] disabled:border-[#e2e4e8] disabled:bg-[#f8f9fa] disabled:text-[#9ca3af] disabled:opacity-100 shadow-xs",
+          "border border-[#08874f] text-[#08874f] dark:text-emerald-400 bg-white dark:bg-slate-800 hover:bg-[#e1f0e8] dark:hover:bg-emerald-950/50 hover:border-[#08874f] active:scale-[0.98] disabled:border-[#e2e4e8] disabled:bg-[#f8f9fa] disabled:text-[#9ca3af] disabled:opacity-100 shadow-xs",
 
         // Danger: Solid Red #dc2626, Hover darker red #991b1b, Disable grey
         danger:
@@ -29,9 +29,9 @@ const buttonVariants = cva(
 
         // Tertiary: Transparent bg with green text, Hover soft grey box #e9ecef, Disable grey text
         tertiary:
-          "text-[#08874f] bg-transparent hover:bg-[#e9ecef] hover:text-[#08874f] disabled:text-[#9ca3af] disabled:bg-transparent disabled:opacity-100",
+          "text-[#08874f] dark:text-emerald-400 bg-transparent hover:bg-[#e9ecef] dark:hover:bg-slate-800 hover:text-[#08874f] dark:hover:text-emerald-300 disabled:text-[#9ca3af] disabled:bg-transparent disabled:opacity-100",
         ghost:
-          "text-[#08874f] bg-transparent hover:bg-[#e9ecef] hover:text-[#08874f] disabled:text-[#9ca3af] disabled:bg-transparent disabled:opacity-100",
+          "text-[#08874f] dark:text-emerald-400 bg-transparent hover:bg-[#e9ecef] dark:hover:bg-slate-800 hover:text-[#08874f] dark:hover:text-emerald-300 disabled:text-[#9ca3af] disabled:bg-transparent disabled:opacity-100",
 
         // Link: Green text with underline on hover, Disable grey
         link:

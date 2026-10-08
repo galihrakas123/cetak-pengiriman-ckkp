@@ -2,6 +2,8 @@ export type DeliveryStatus = "TERKIRIM" | "DALAM_PROSES" | "RETUR" | "PENDING";
 
 export type CetakStatus = "BELUM_DICETAK" | "SUDAH_DICETAK";
 
+export type StatusPengirimanSKKP = "PENDING" | "DALAM_PENGIRIMAN" | "DIKIRIM" | "TERKIRIM" | "RETUR";
+
 export interface CetakSKKPRecord {
   id: string;
   no?: number;
@@ -20,9 +22,10 @@ export interface CetakSKKPRecord {
   opsiPengiriman?: string;
   tanggalCetak?: string;
   petugasCetak?: string;
-  statusPengiriman?: "PENDING" | "DIKIRIM";
+  statusPengiriman?: StatusPengirimanSKKP;
   noResi?: string;
   ekspedisi?: string;
+  tanggalKirim?: string;
   isRead?: boolean;
   is_read?: boolean;
 }
@@ -32,6 +35,8 @@ export interface CetakSummaryStats {
   belumDicetak: number;
   sudahDicetak: number;
   siapKirim: number;
+  sudahTerkirim: number;
+  dalamPengiriman: number;
 }
 
 export interface DeliveryRecord {

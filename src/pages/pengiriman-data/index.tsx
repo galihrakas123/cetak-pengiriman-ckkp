@@ -1,13 +1,13 @@
 import React, { useState } from "react";
 import { 
   Filter, 
-  Eye, 
-  EyeOff,
+  Eye,
   Mail,
   FileText,
   User,
   MapPin,
-  Check
+  Check,
+  ChevronDown
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -75,15 +75,15 @@ const PengirimanDataPage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="type-headline-medium text-slate-800 tracking-tight">Pengiriman & Tracking SKKP</h1>
-          <p className="type-body-small text-slate-500 mt-1">
+          <h1 className="type-headline-medium text-slate-800 dark:text-white tracking-tight">Pengiriman & Tracking SKKP</h1>
+          <p className="type-body-small text-slate-500 dark:text-slate-400 mt-1">
             Daftar lengkap distribusi berkas SKKP dan pelacakan status pengiriman ke wajib pajak
           </p>
         </div>
       </div>
 
       {/* Main Table Card */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-5 md:p-6 space-y-4 w-full">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-xs p-5 md:p-6 space-y-4 w-full">
         {/* Filters & Search Toolbar with New Searchbar Component */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 w-full pb-2">
           <Searchbar
@@ -97,44 +97,56 @@ const PengirimanDataPage: React.FC = () => {
           />
 
           <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
-            <Filter size={15} className="text-slate-400" />
+            <Filter size={15} className="text-[#08874f] dark:text-emerald-400" />
             
-            <select
-              className="border border-slate-200 rounded-xl text-xs px-3 py-2 bg-[#f8f9fa] text-slate-700 outline-none focus:ring-1 focus:ring-[#08874f] cursor-pointer"
-              value={statusFilter}
-              onChange={(e) => {
-                setStatusFilter(e.target.value);
-                setCurrentPage(1);
-              }}
-            >
-              <option value="ALL">Semua Status</option>
-              <option value="TERKIRIM">Terkirim</option>
-              <option value="DALAM_PROSES">Dalam Perjalanan</option>
-              <option value="PENDING">Menunggu Kirim</option>
-              <option value="RETUR">Retur / Gagal</option>
-            </select>
+            <div className="relative">
+              <select
+                className="appearance-none bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs rounded-xl px-3.5 py-2 pr-8 focus:outline-none focus:ring-1 focus:ring-[#08874f] focus:border-[#08874f] transition-all cursor-pointer font-medium"
+                value={statusFilter}
+                onChange={(e) => {
+                  setStatusFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
+              >
+                <option value="ALL">Semua Status</option>
+                <option value="TERKIRIM">Terkirim</option>
+                <option value="DALAM_PROSES">Dalam Perjalanan</option>
+                <option value="PENDING">Menunggu Kirim</option>
+                <option value="RETUR">Retur / Gagal</option>
+              </select>
+              <ChevronDown
+                size={14}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#08874f] dark:text-emerald-400 stroke-[2.2] pointer-events-none"
+              />
+            </div>
 
-            <select
-              className="border border-slate-200 rounded-xl text-xs px-3 py-2 bg-[#f8f9fa] text-slate-700 outline-none focus:ring-1 focus:ring-[#08874f] cursor-pointer"
-              value={samsatFilter}
-              onChange={(e) => {
-                setSamsatFilter(e.target.value);
-                setCurrentPage(1);
-              }}
-            >
-              <option value="ALL">Semua Samsat</option>
-              <option value="Bandung">Samsat Bandung</option>
-              <option value="Bogor">Samsat Bogor</option>
-              <option value="Bekasi">Samsat Bekasi</option>
-              <option value="Cirebon">Samsat Cirebon</option>
-              <option value="Karawang">Samsat Karawang</option>
-              <option value="Tasikmalaya">Samsat Tasikmalaya</option>
-            </select>
+            <div className="relative">
+              <select
+                className="appearance-none bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs rounded-xl px-3.5 py-2 pr-8 focus:outline-none focus:ring-1 focus:ring-[#08874f] focus:border-[#08874f] transition-all cursor-pointer font-medium"
+                value={samsatFilter}
+                onChange={(e) => {
+                  setSamsatFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
+              >
+                <option value="ALL">Semua Samsat</option>
+                <option value="Bandung">Samsat Bandung</option>
+                <option value="Bogor">Samsat Bogor</option>
+                <option value="Bekasi">Samsat Bekasi</option>
+                <option value="Cirebon">Samsat Cirebon</option>
+                <option value="Karawang">Samsat Karawang</option>
+                <option value="Tasikmalaya">Samsat Tasikmalaya</option>
+              </select>
+              <ChevronDown
+                size={14}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#08874f] dark:text-emerald-400 stroke-[2.2] pointer-events-none"
+              />
+            </div>
           </div>
         </div>
 
         {/* Data Table with Green Header */}
-        <div className="overflow-hidden rounded-xl border border-slate-200/90 w-full shadow-xs">
+        <div className="overflow-hidden rounded-xl border border-slate-200/90 dark:border-slate-700 w-full shadow-xs bg-white dark:bg-slate-900">
           <div className="overflow-x-auto w-full">
             <table className="w-full text-left text-xs border-collapse">
               <thead className="bg-[#08874f] text-white">
@@ -158,7 +170,7 @@ const PengirimanDataPage: React.FC = () => {
                     Ekspedisi
                   </th>
                   <th className="py-3 px-4 font-semibold border-r border-white/20 whitespace-nowrap">
-                    Tgl Kirim
+                    Tanggal Kirim
                   </th>
                   <th className="py-3 px-4 font-semibold text-center border-r border-white/20 whitespace-nowrap">
                     Status
@@ -168,29 +180,29 @@ const PengirimanDataPage: React.FC = () => {
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 bg-white">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900">
                 {paginatedData.length > 0 ? (
                   paginatedData.map((row: DeliveryRecord) => (
-                    <tr key={row.id} className="hover:bg-slate-50/70 transition-colors">
-                      <td className="py-3.5 px-4 font-mono font-medium text-slate-800">
+                    <tr key={row.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/70 transition-colors">
+                      <td className="py-3.5 px-4 font-mono font-medium text-slate-800 dark:text-slate-100">
                         {row.noResi}
                       </td>
-                      <td className="py-3.5 px-4 font-semibold text-[#08874f]">
+                      <td className="py-3.5 px-4 font-semibold text-[#08874f] dark:text-emerald-400">
                         {row.noPolisi}
                       </td>
-                      <td className="py-3.5 px-4 text-slate-800 font-medium">
+                      <td className="py-3.5 px-4 text-slate-800 dark:text-slate-100 font-medium">
                         {row.namaWp}
                       </td>
-                      <td className="py-3.5 px-4 text-slate-500 max-w-[200px] truncate">
+                      <td className="py-3.5 px-4 text-slate-500 dark:text-slate-400 max-w-[200px] truncate">
                         {row.alamatWp}
                       </td>
-                      <td className="py-3.5 px-4 text-slate-600">
+                      <td className="py-3.5 px-4 text-slate-600 dark:text-slate-300">
                         {row.samsat}
                       </td>
-                      <td className="py-3.5 px-4 text-slate-600">
+                      <td className="py-3.5 px-4 text-slate-600 dark:text-slate-300">
                         {row.ekspedisi}
                       </td>
-                      <td className="py-3.5 px-4 text-slate-500">
+                      <td className="py-3.5 px-4 text-slate-500 dark:text-slate-400">
                         {row.tanggalKirim}
                       </td>
                       <td className="py-3.5 px-4 text-center">
@@ -200,7 +212,7 @@ const PengirimanDataPage: React.FC = () => {
                         <Button 
                           variant="tertiary" 
                           size="sm" 
-                          className="h-7 w-7 p-0 hover:bg-[#e1f0e8]"
+                          className="h-7 w-7 p-0 hover:bg-[#e1f0e8] dark:hover:bg-slate-800 text-[#08874f] dark:text-emerald-400"
                           onClick={() => navigate(`/pengiriman/tracking?resi=${row.noResi}`)}
                           title="Lihat Detail & Tracking"
                         >
@@ -211,7 +223,7 @@ const PengirimanDataPage: React.FC = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={9} className="py-8 text-center text-slate-400">
+                    <td colSpan={9} className="py-8 text-center text-slate-400 dark:text-slate-500">
                       Tidak ada data pengiriman yang cocok.
                     </td>
                   </tr>
@@ -244,63 +256,46 @@ const PengirimanDataPage: React.FC = () => {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-2">
-            {/* Input 1: Active / Default state with Prefix Mail & Suffix Eye-off Green */}
+          <div className="space-y-3.5 py-2">
             <Input
               label="Nomor Resi SKKP"
-              helperText="Masukkan kode nomor resi pengiriman resmi"
-              placeholder="Text Placeholder"
+              placeholder="Contoh: SKKP-2026-009988"
               defaultValue="SKKP-2026-009988"
               prefixIcon={<Mail size={16} />}
-              suffixIcon={<EyeOff size={16} />}
             />
 
-            {/* Input 2: No Polisi */}
             <Input
               label="Nomor Polisi Kendaraan"
-              helperText="Format nomor polisi kendaraan bermotor"
-              placeholder="Contoh: B 1234 XYZ"
+              placeholder="Contoh: D 1234 XYZ"
               prefixIcon={<FileText size={16} />}
               suffixIcon={<Check size={16} />}
             />
 
-            {/* Input 3: Nama Wajib Pajak */}
             <Input
               label="Nama Lengkap Wajib Pajak"
-              helperText="Nama pemilik kendaraan sesuai STNK / BPKB"
-              placeholder="Text Placeholder"
+              placeholder="Nama pemilik sesuai STNK/KTP"
               prefixIcon={<User size={16} />}
             />
 
-            {/* Input 4: Alamat Penerima */}
             <Input
               label="Alamat Tujuan Pengiriman"
-              helperText="Alamat lengkap tujuan surat ketetapan"
-              placeholder="Text Placeholder"
+              placeholder="Alamat lengkap penerima SKKP"
               prefixIcon={<MapPin size={16} />}
             />
 
-            {/* Input 5: Disabled State Showcase */}
             <Input
               disabled
               label="Kode Wilayah Samsat (Terkunci)"
-              helperText="Ditentukan otomatis oleh sistem berdasarkan domisili"
-              placeholder="Text Placeholder"
-              defaultValue="SAMSAT INDUK JAKARTA TIMUR"
+              defaultValue="Samsat Kota Bandung"
               prefixIcon={<Mail size={16} />}
-              suffixIcon={<EyeOff size={16} />}
             />
 
-            {/* Input 6: Error State Showcase */}
             <Input
               isError
-              errorMessage="Error Messages: Format nomor kontak tidak valid"
+              errorMessage="Format nomor kontak tidak valid"
               label="Nomor Kontak Alternatif (Contoh Error State)"
-              helperText="Helper Messages: Masukkan nomor handphone aktif penerima"
-              placeholder="Text Placeholder"
               defaultValue="0812-INVALID"
               prefixIcon={<Mail size={16} />}
-              suffixIcon={<EyeOff size={16} />}
             />
           </div>
 

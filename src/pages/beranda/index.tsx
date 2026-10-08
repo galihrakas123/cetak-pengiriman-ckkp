@@ -7,8 +7,7 @@ import {
   AlertCircle, 
   Download, 
   TrendingUp,
-  ChevronDown,
-  Calendar
+  ChevronDown
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -94,7 +93,7 @@ const BerandaPage: React.FC = () => {
                 </select>
                 <ChevronDown
                   size={14}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#08874f] dark:text-emerald-400 stroke-[2.2] pointer-events-none"
                 />
               </div>
             </div>
@@ -116,7 +115,7 @@ const BerandaPage: React.FC = () => {
                 </select>
                 <ChevronDown
                   size={14}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#08874f] dark:text-emerald-400 stroke-[2.2] pointer-events-none"
                 />
               </div>
             </div>
@@ -293,20 +292,15 @@ const BerandaPage: React.FC = () => {
 
                         {/* 4. Ekspedisi */}
                         <td className="py-3.5 px-4 whitespace-nowrap">
-                          <div className="font-medium text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                            <Truck className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                            <span>{item.ekspedisi || item.opsiPengiriman || "-"}</span>
-                          </div>
+                          <span className="font-medium text-slate-800 dark:text-slate-200">
+                            {item.ekspedisi || item.opsiPengiriman || "-"}
+                          </span>
                         </td>
 
                         {/* 5. Tanggal Pengajuan */}
                         <td className="py-3.5 px-4 whitespace-nowrap">
-                          <div className="text-slate-700 dark:text-slate-300 font-medium flex items-center gap-1.5">
-                            <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                          <div className="text-slate-700 dark:text-slate-200 font-medium">
                             {item.tanggalPengajuan}
-                          </div>
-                          <div className="text-[11px] text-slate-400 mt-0.5">
-                            e-Samsat Online
                           </div>
                         </td>
 
@@ -322,6 +316,13 @@ const BerandaPage: React.FC = () => {
                               <Clock className="w-3 h-3 text-white" />
                               Belum dicetak
                             </Badge>
+                          )}
+
+                          {/* Info jika sudah dicetak */}
+                          {isSudahDicetak && item.tanggalCetak && (
+                            <div className="text-[10px] text-slate-400 mt-1">
+                              Dicetak: {item.tanggalCetak}
+                            </div>
                           )}
                         </td>
                       </tr>

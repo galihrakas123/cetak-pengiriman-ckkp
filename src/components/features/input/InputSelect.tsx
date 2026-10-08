@@ -1,5 +1,6 @@
 import { Label } from "@/components/ui/label";
 import { customStylesInputWithoutRounded } from "@/utils/utils";
+import { cn } from "@/lib/utils";
 import React from "react";
 import Select from "react-select";
 
@@ -28,8 +29,8 @@ const InputSelect = React.forwardRef<any, InputSelectProps>(
     },
     ref
   ) => (
-    <div className={className}>
-      <Label className="font-bold">{label}</Label>
+    <div className={cn("space-y-1.5", className)}>
+      <Label>{label}</Label>
       <Select
         ref={ref}
         placeholder={placeholder}

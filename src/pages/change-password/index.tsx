@@ -101,32 +101,27 @@ const ChangePasswordPage = () => {
               name="current_password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="font-bold">Kata Sandi Lama</FormLabel>
+                  <FormLabel>Kata Sandi Lama</FormLabel>
                   <FormControl>
-                    <div className="flex">
-                      <Input
-                        placeholder="Masukkan kata sandi lama"
-                        {...field}
-                        disabled={isLoading}
-                        type={oldPasswordType}
-                      />
-                      <span
-                        className="p-inputgroup-addon p-1"
-                        onClick={() =>
-                          setOldPasswordType(
-                            oldPasswordType === "password" ? "text" : "password"
-                          )
-                        }
-                      >
-                        {oldPasswordType ? (
-                          <Eye size={18} />
+                    <Input
+                      placeholder="Masukkan kata sandi lama"
+                      {...field}
+                      disabled={isLoading}
+                      type={oldPasswordType}
+                      suffixIcon={
+                        oldPasswordType === "password" ? (
+                          <EyeOff size={16} />
                         ) : (
-                          <EyeOff size={18} />
-                        )}
-                      </span>
-                    </div>
+                          <Eye size={16} />
+                        )
+                      }
+                      onSuffixClick={() =>
+                        setOldPasswordType(
+                          oldPasswordType === "password" ? "text" : "password"
+                        )
+                      }
+                    />
                   </FormControl>
-
                   <FormMessage />
                 </FormItem>
               )}
@@ -136,32 +131,27 @@ const ChangePasswordPage = () => {
               name="new_password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="font-bold">Kata Sandi Baru</FormLabel>
+                  <FormLabel>Kata Sandi Baru</FormLabel>
                   <FormControl>
-                    <div className="flex">
-                      <Input
-                        placeholder="Masukkan kata sandi baru"
-                        {...field}
-                        disabled={isLoading}
-                        type={newPasswordType}
-                      />
-                      <span
-                        className="p-inputgroup-addon p-1"
-                        onClick={() =>
-                          setNewPasswordType(
-                            newPasswordType === "password" ? "text" : "password"
-                          )
-                        }
-                      >
-                        {newPasswordType ? (
-                          <Eye size={18} />
+                    <Input
+                      placeholder="Masukkan kata sandi baru"
+                      {...field}
+                      disabled={isLoading}
+                      type={newPasswordType}
+                      suffixIcon={
+                        newPasswordType === "password" ? (
+                          <EyeOff size={16} />
                         ) : (
-                          <EyeOff size={18} />
-                        )}
-                      </span>
-                    </div>
+                          <Eye size={16} />
+                        )
+                      }
+                      onSuffixClick={() =>
+                        setNewPasswordType(
+                          newPasswordType === "password" ? "text" : "password"
+                        )
+                      }
+                    />
                   </FormControl>
-
                   <FormMessage />
                 </FormItem>
               )}
@@ -172,36 +162,29 @@ const ChangePasswordPage = () => {
               name="confirm_password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="font-bold">
-                    Konfirmasi Kata Sandi Baru
-                  </FormLabel>
+                  <FormLabel>Konfirmasi Kata Sandi Baru</FormLabel>
                   <FormControl>
-                    <div className="flex">
-                      <Input
-                        placeholder="Masukkank konfirmasi kata sandi baru"
-                        {...field}
-                        disabled={isLoading}
-                        type={confirmPasswordType}
-                      />
-                      <span
-                        className="p-inputgroup-addon p-1"
-                        onClick={() =>
-                          setConfirmPasswordType(
-                            confirmPasswordType === "password"
-                              ? "text"
-                              : "password"
-                          )
-                        }
-                      >
-                        {confirmPasswordType ? (
-                          <Eye size={18} />
+                    <Input
+                      placeholder="Masukkan konfirmasi kata sandi baru"
+                      {...field}
+                      disabled={isLoading}
+                      type={confirmPasswordType}
+                      suffixIcon={
+                        confirmPasswordType === "password" ? (
+                          <EyeOff size={16} />
                         ) : (
-                          <EyeOff size={18} />
-                        )}
-                      </span>
-                    </div>
+                          <Eye size={16} />
+                        )
+                      }
+                      onSuffixClick={() =>
+                        setConfirmPasswordType(
+                          confirmPasswordType === "password"
+                            ? "text"
+                            : "password"
+                        )
+                      }
+                    />
                   </FormControl>
-
                   <FormMessage />
                 </FormItem>
               )}

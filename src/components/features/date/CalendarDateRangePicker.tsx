@@ -26,8 +26,8 @@ export function CalendarDateRangePicker({
             id="date"
             variant={"outline"}
             className={cn(
-              "justify-between text-left font-normal rounded-lg border-[1.5px] border-[#cccccc] h-[38px]",
-              !date && "text-muted-foreground"
+              "h-10 justify-between text-left font-medium text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-white px-3.5 transition-all shadow-none",
+              !date && "text-slate-400"
             )}
           >
             {date?.from ? (
@@ -42,7 +42,7 @@ export function CalendarDateRangePicker({
             ) : (
               <span>{placeholder || "Pilih Tanggal"}</span>
             )}
-            <CalendarIcon className="mr-2 h-4 w-4" />
+            <CalendarIcon className="ml-2 h-3.5 w-3.5 text-[#08874f] dark:text-emerald-400 stroke-[2.2]" />
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="end">
