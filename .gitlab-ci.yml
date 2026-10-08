@@ -1,0 +1,15 @@
+# To contribute improvements to CI/CD templates, please follow the Development guide at:
+# https://docs.gitlab.com/ee/development/cicd/templates.html
+
+stages:
+  - deploy
+
+deploy:
+  stage: deploy
+  tags:
+    - deployment
+  script:
+    - echo "Deployment process..."
+    - sudo -u psip bash -c 'cd /home/psip/frontend-dashoard-esamsat && git pull https://Deploy:$ESAMSAT_DEPLOY_TOKEN@repo.jabarprov.go.id/bapenda/frontend-dashoard-esamsat.git && docker-compose build && docker-compose up -d && docker system prune -f'
+  only:
+    - main

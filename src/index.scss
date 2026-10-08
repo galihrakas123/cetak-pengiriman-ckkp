@@ -1,0 +1,238 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+@import url("https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap");
+
+@layer base {
+  :root {
+    --background: 220 14% 96%;
+    --foreground: 222.2 47.4% 11.2%;
+    --header: 0 0% 100%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 47.4% 11.2%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 47.4% 11.2%;
+
+    --primary: 153 89% 28%; /* #08874f */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 13% 91%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    --muted: 220 14% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 142 76% 94%;
+    --accent-foreground: 153 89% 28%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-hover: 0 87% 57%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 153 89% 28%;
+    --radius: 0.75rem;
+
+    /* Color Tokens from Design Specification */
+    --canvas: #f0f2f5;
+    --canvas-dark: #121212;
+
+    --color-primary: #08874f;
+    --color-on-primary: #ffffff;
+    --color-primary-container: #e1f0e8;
+    --color-on-primary-container: #06683d;
+
+    --color-secondary: #eeeeee;
+    --color-on-secondary: #757575;
+    --color-secondary-container: #e3f2fd;
+    --color-on-secondary-container: #1976d2;
+
+    --color-error: #dc2626;
+    --color-error-container: #ffebee;
+    --color-on-error: #ffffff;
+    --color-on-error-container: #991b1b;
+
+    --color-outline: #9e9e9e;
+    --color-outline-variant: #e2e4e8;
+
+    --color-surface: #ffffff;
+    --color-on-surface: #1f2937;
+    --color-on-surface-variant: #4b5563;
+    --color-surface-dim: #e0e0e0;
+    --color-surface-bright: #ffffff;
+    --color-surface-container: #f8f9fa;
+    --color-surface-container-high: #eaeaea;
+    --color-surface-container-highest: #e0e0e0;
+    --color-surface-container-low: #f8f9fa;
+    --color-surface-container-lowest: #ffffff;
+
+    --color-tertiary: #eeeeee;
+    --color-on-tertiary: #ffffff;
+    --color-tertiary-container: #fff8e1;
+    --color-on-tertiary-container: #b45309;
+  }
+
+  .dark {
+    --background: 224 71% 4%;
+    --foreground: 213 31% 91%;
+
+    --card: 224 71% 4%;
+    --card-foreground: 213 31% 91%;
+
+    --popover: 224 71% 4%;
+    --popover-foreground: 215 20.2% 65.1%;
+
+    --primary: 153 89% 28%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 222.2 47.4% 11.2%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 223 47% 11%;
+    --muted-foreground: 215.4 16.3% 56.9%;
+
+    --accent: 216 34% 17%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 63% 31%;
+    --destructive-hover: 0 87% 57%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 216 34% 17%;
+    --input: 216 34% 17%;
+    --ring: 153 89% 28%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    font-family: "Roboto", sans-serif;
+  }
+  body {
+    @apply bg-background text-foreground font-normal;
+    font-family: "Roboto", sans-serif;
+  }
+}
+
+/* =========================================================
+   Typography Tokens - Roboto Scale (Design Specification)
+   ========================================================= */
+.type-display-large {
+  font-family: "Roboto", sans-serif;
+  font-size: 34px;
+  line-height: 150%;
+  font-weight: 400;
+}
+.type-display-medium {
+  font-family: "Roboto", sans-serif;
+  font-size: 32px;
+  line-height: 150%;
+  font-weight: 400;
+}
+.type-display-small {
+  font-family: "Roboto", sans-serif;
+  font-size: 30px;
+  line-height: 150%;
+  font-weight: 400;
+}
+.type-headline-large {
+  font-family: "Roboto", sans-serif;
+  font-size: 28px;
+  line-height: 150%;
+  font-weight: 500;
+}
+.type-headline-medium {
+  font-family: "Roboto", sans-serif;
+  font-size: 24px;
+  line-height: 150%;
+  font-weight: 500;
+}
+.type-headline-small {
+  font-family: "Roboto", sans-serif;
+  font-size: 20px;
+  line-height: 150%;
+  font-weight: 500;
+}
+.type-title-large {
+  font-family: "Roboto", sans-serif;
+  font-size: 18px;
+  line-height: 150%;
+  font-weight: 600;
+}
+.type-title-medium {
+  font-family: "Roboto", sans-serif;
+  font-size: 16px;
+  line-height: 150%;
+  font-weight: 600;
+}
+.type-title-small {
+  font-family: "Roboto", sans-serif;
+  font-size: 14px;
+  line-height: 150%;
+  font-weight: 600;
+}
+.type-body-large {
+  font-family: "Roboto", sans-serif;
+  font-size: 16px;
+  line-height: 150%;
+  font-weight: 400;
+}
+.type-body-medium {
+  font-family: "Roboto", sans-serif;
+  font-size: 14px;
+  line-height: 125%;
+  font-weight: 400;
+}
+.type-body-small {
+  font-family: "Roboto", sans-serif;
+  font-size: 12px;
+  line-height: 125%;
+  font-weight: 400;
+}
+.type-body-xsmall {
+  font-family: "Roboto", sans-serif;
+  font-size: 10px;
+  line-height: 125%;
+  font-weight: 400;
+}
+.type-label-large {
+  font-family: "Roboto", sans-serif;
+  font-size: 14px;
+  line-height: 150%;
+  font-weight: 500;
+}
+.type-label-medium {
+  font-family: "Roboto", sans-serif;
+  font-size: 12px;
+  line-height: 150%;
+  font-weight: 500;
+}
+.type-label-small {
+  font-family: "Roboto", sans-serif;
+  font-size: 10px;
+  line-height: 150%;
+  font-weight: 500;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+}
+
+.scroll__primary::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+.scroll__primary::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+.scroll__primary::-webkit-scrollbar-track {
+  background: transparent;
+}
