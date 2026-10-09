@@ -122,7 +122,7 @@ const LoginPage: React.FC = () => {
           {/* Judul & Subjudul */}
           <div className="mb-7 text-left">
             <h1 className="text-2xl sm:text-[28px] font-serif font-bold text-slate-900 dark:text-white leading-[1.3] tracking-tight">
-              Wilujeung Sumping di Pengelolaan Cetak &amp; Distribusi SKKP Jawa Barat
+              di Pengelolaan Cetak &amp; Distribusi SKKP Jawa Barat
             </h1>
             <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-2 font-normal">
               Dashboard Cetak &amp; Distribusi SKKP
