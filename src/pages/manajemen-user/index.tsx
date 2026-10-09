@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Users,
   UserPlus,
@@ -8,6 +8,7 @@ import {
   X,
   Check,
   ChevronDown,
+  RefreshCw,
 } from "lucide-react";
 import MainCard from "@/components/card/MainCard";
 import { Button } from "@/components/ui/button";
@@ -89,10 +90,76 @@ const ManajemenUserPage: React.FC = () => {
     { value: "ADMIN", label: "Admin Sistem" },
   ];
 
+  // Helper fungsi pembersih kunci layar & refresh otomatis anti-freeze
+  const forceUnlockScreen = () => {
+    if (typeof document !== "undefined") {
+      document.body.style.pointerEvents = "auto";
+      document.body.style.overflow = "auto";
+      document.body.removeAttribute("data-scroll-locked");
+      const root = document.getElementById("root");
+      if (root) {
+        root.removeAttribute("aria-hidden");
+      }
+    }
+  };
+
   // Sinkronkan data dari database saat dibuka
   const refreshUsers = () => {
     setUsers(userService.getAllUsers());
+    forceUnlockScreen();
   };
+
+  const handleCloseSuccess = () => {
+    setIsSuccessModalOpen(false);
+    forceUnlockScreen();
+    refreshUsers();
+    setTimeout(forceUnlockScreen, 50);
+    setTimeout(forceUnlockScreen, 200);
+  };
+
+  const handleCloseError = () => {
+    setIsErrorModalOpen(false);
+    forceUnlockScreen();
+    setTimeout(forceUnlockScreen, 50);
+  };
+
+  // Auto-close modal sukses dan refresh otomatis setelah aksi selesai
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (isSuccessModalOpen) {
+      timer = setTimeout(() => {
+        handleCloseSuccess();
+      }, 1600);
+    }
+    return () => clearTimeout(timer);
+  }, [isSuccessModalOpen]);
+
+  // Pantau status dialog agar layar TIDAK PERNAH freeze saat dialog tertutup
+  useEffect(() => {
+    const hasOpenModal =
+      isUserModalOpen ||
+      isDetailModalOpen ||
+      isConfirmSaveOpen ||
+      isDeleteModalOpen ||
+      isSuccessModalOpen ||
+      isErrorModalOpen;
+
+    if (!hasOpenModal) {
+      const t1 = setTimeout(forceUnlockScreen, 50);
+      const t2 = setTimeout(forceUnlockScreen, 250);
+      return () => {
+        clearTimeout(t1);
+        clearTimeout(t2);
+      };
+    }
+  }, [
+    isUserModalOpen,
+    isDetailModalOpen,
+    isConfirmSaveOpen,
+    isDeleteModalOpen,
+    isSuccessModalOpen,
+    isErrorModalOpen,
+  ]);
 
   // Statistik Ringkasan (Menyesuaikan dengan Kolom Tabel: Name, Nm Role)
   const totalUsersCount = users.length;
@@ -293,8 +360,17 @@ const ManajemenUserPage: React.FC = () => {
           </p>
         </div>
 
-        {/* Tombol Tambah User Baru */}
+        {/* Tombol Aksi Header */}
         <div className="flex items-center gap-2.5 shrink-0">
+          <Button
+            onClick={() => refreshUsers()}
+            variant="outline"
+            className="gap-2 px-3.5 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
+            title="Segarkan data pengguna"
+          >
+            <RefreshCw size={15} />
+            <span className="hidden sm:inline">Segarkan</span>
+          </Button>
           <Button
             onClick={handleOpenAddModal}
             variant="primary"
@@ -1013,7 +1089,7 @@ const ManajemenUserPage: React.FC = () => {
       {/* =========================================================================
           MODAL 5: Data Berhasil Disimpan / Dihapus (Persis Gambar 1 Kiri Atas)
          ========================================================================= */}
-      <Dialog open={isSuccessModalOpen} onOpenChange={setIsSuccessModalOpen}>
+      <Dialog open={isSuccessModalOpen} onOpenChange={(open) => { if (!open) handleCloseSuccess(); }}>
         <DialogContent className="max-w-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-8 rounded-3xl shadow-2xl text-center">
           <div className="flex flex-col items-center">
             {/* Lingkaran Hijau Besar Icon Checkmark (Gambar 1) */}
@@ -1025,10 +1101,7 @@ const ManajemenUserPage: React.FC = () => {
             </h3>
             <button
               type="button"
-              onClick={() => {
-                setIsSuccessModalOpen(false);
-                refreshUsers();
-              }}
+              onClick={handleCloseSuccess}
               className="w-full h-11 bg-[#08874f] hover:bg-[#06683d] text-white font-semibold text-sm rounded-xl transition-all shadow-md shadow-emerald-600/20 cursor-pointer"
             >
               Ya, saya mengerti
@@ -1040,7 +1113,7 @@ const ManajemenUserPage: React.FC = () => {
       {/* =========================================================================
           MODAL 6: Data Gagal Disimpan (Persis Gambar 1 Kiri Bawah)
          ========================================================================= */}
-      <Dialog open={isErrorModalOpen} onOpenChange={setIsErrorModalOpen}>
+      <Dialog open={isErrorModalOpen} onOpenChange={(open) => { if (!open) handleCloseError(); }}>
         <DialogContent className="max-w-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-8 rounded-3xl shadow-2xl text-center">
           <div className="flex flex-col items-center">
             {/* Lingkaran Merah Besar Icon X (Gambar 1) */}
@@ -1055,7 +1128,7 @@ const ManajemenUserPage: React.FC = () => {
             </p>
             <button
               type="button"
-              onClick={() => setIsErrorModalOpen(false)}
+              onClick={handleCloseError}
               className="w-full h-11 bg-[#08874f] hover:bg-[#06683d] text-white font-semibold text-sm rounded-xl transition-all shadow-md shadow-emerald-600/20 cursor-pointer"
             >
               Kembali

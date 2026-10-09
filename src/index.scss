@@ -243,3 +243,8 @@
 .scroll__primary::-webkit-scrollbar-track {
   background: transparent;
 }
+
+/* Fix bug Radix UI Dialog / Dropdown pointer-events freeze */
+body {
+  pointer-events: auto !important;
+}
