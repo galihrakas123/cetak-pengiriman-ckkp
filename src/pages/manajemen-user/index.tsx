@@ -8,7 +8,6 @@ import {
   X,
   Check,
   ChevronDown,
-  RefreshCw,
 } from "lucide-react";
 import MainCard from "@/components/card/MainCard";
 import { Button } from "@/components/ui/button";
@@ -108,6 +107,14 @@ const ManajemenUserPage: React.FC = () => {
     setUsers(userService.getAllUsers());
     forceUnlockScreen();
   };
+
+  // Polling otomatis data pengguna setiap 5 menit sekali
+  useEffect(() => {
+    const interval = setInterval(() => {
+      refreshUsers();
+    }, 5 * 60 * 1000); // 5 menit
+    return () => clearInterval(interval);
+  }, []);
 
   const handleCloseSuccess = () => {
     setIsSuccessModalOpen(false);
@@ -363,15 +370,6 @@ const ManajemenUserPage: React.FC = () => {
         {/* Tombol Aksi Header */}
         <div className="flex items-center gap-2.5 shrink-0">
           <Button
-            onClick={() => refreshUsers()}
-            variant="outline"
-            className="gap-2 px-3.5 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
-            title="Segarkan data pengguna"
-          >
-            <RefreshCw size={15} />
-            <span className="hidden sm:inline">Segarkan</span>
-          </Button>
-          <Button
             onClick={handleOpenAddModal}
             variant="primary"
             className="gap-2 px-4 shadow-sm font-semibold"
@@ -537,135 +535,138 @@ const ManajemenUserPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Tabel Data Pengguna */}
-        <div className="overflow-x-auto rounded-xl border border-slate-200/90 dark:border-slate-700 shadow-2xs mt-2">
-          <table className="w-full text-left text-xs border-collapse">
-            <thead>
-              <tr className="bg-[#08874f] text-white font-semibold tracking-wide border-b border-emerald-800 dark:border-slate-700 text-xs">
-                <th className="py-3.5 px-4 text-left border-r border-white/60">
-                  Name
-                </th>
-                <th className="py-3.5 px-4 text-left border-r border-white/60">
-                  Username
-                </th>
-                <th className="py-3.5 px-4 text-left border-r border-white/60">
-                  Kd Wil
-                </th>
-                <th className="py-3.5 px-4 text-left border-r border-white/60">
-                  Kd Wil Kerja
-                </th>
-                <th className="py-3.5 px-4 text-left border-r border-white/60">
-                  Nm Role
-                </th>
-                <th className="py-3.5 px-4 text-center w-28">
-                  Aksi
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-200 dark:divide-slate-700 text-slate-700 dark:text-slate-200">
-              {paginatedUsers.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="py-12 text-center text-slate-400 dark:text-slate-500">
-                    <div className="flex flex-col items-center justify-center gap-2">
-                      <Users size={32} className="stroke-[1.5] text-slate-300 dark:text-slate-600" />
-                      <p className="font-medium text-xs">Tidak ada data pengguna yang sesuai dengan filter.</p>
-                    </div>
-                  </td>
+        {/* Tabel Data Pengguna Terpadu dengan Pagination */}
+        <div className="overflow-hidden rounded-xl border border-slate-200/90 dark:border-slate-700 w-full shadow-xs bg-white dark:bg-slate-900 mt-2">
+          <div className="overflow-x-auto w-full">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="bg-[#08874f] text-white font-semibold tracking-wide border-b border-emerald-800 dark:border-slate-700 text-xs">
+                  <th className="py-3.5 px-4 text-left border-r border-white/60">
+                    Name
+                  </th>
+                  <th className="py-3.5 px-4 text-left border-r border-white/60">
+                    Username
+                  </th>
+                  <th className="py-3.5 px-4 text-left border-r border-white/60">
+                    Kd Wil
+                  </th>
+                  <th className="py-3.5 px-4 text-left border-r border-white/60">
+                    Kd Wil Kerja
+                  </th>
+                  <th className="py-3.5 px-4 text-left border-r border-white/60">
+                    Nm Role
+                  </th>
+                  <th className="py-3.5 px-4 text-center w-28">
+                    Aksi
+                  </th>
                 </tr>
-              ) : (
-                paginatedUsers.map((user) => {
-                  return (
-                    <tr
-                      key={user.id}
-                      className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors border-b border-slate-200 dark:border-slate-700"
-                    >
-                      {/* 1. Name */}
-                      <td className="py-3.5 px-4 border-r border-slate-200 dark:border-slate-700">
-                        <div className="font-semibold text-slate-900 dark:text-white text-xs">
-                          {user.surname || user.nama}
-                        </div>
-                      </td>
+              </thead>
+              <tbody className="divide-y divide-slate-200 dark:divide-slate-700 text-slate-700 dark:text-slate-200">
+                {paginatedUsers.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="py-12 text-center text-slate-400 dark:text-slate-500">
+                      <div className="flex flex-col items-center justify-center gap-2">
+                        <Users size={32} className="stroke-[1.5] text-slate-300 dark:text-slate-600" />
+                        <p className="font-medium text-xs">Tidak ada data pengguna yang sesuai dengan filter.</p>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  paginatedUsers.map((user) => {
+                    return (
+                      <tr
+                        key={user.id}
+                        className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors border-b border-slate-200 dark:border-slate-700"
+                      >
+                        {/* 1. Name */}
+                        <td className="py-3.5 px-4 border-r border-slate-200 dark:border-slate-700">
+                          <div className="font-semibold text-slate-900 dark:text-white text-xs">
+                            {user.surname || user.nama}
+                          </div>
+                        </td>
 
-                      {/* 2. Username */}
-                      <td className="py-3.5 px-4 border-r border-slate-200 dark:border-slate-700">
-                        <span className="font-medium text-slate-800 dark:text-slate-200 font-mono text-xs">
-                          {user.username || user.email?.split("@")[0] || user.id.toLowerCase()}
-                        </span>
-                      </td>
+                        {/* 2. Username */}
+                        <td className="py-3.5 px-4 border-r border-slate-200 dark:border-slate-700">
+                          <span className="font-medium text-slate-800 dark:text-slate-200 font-mono text-xs">
+                            {user.username || user.email?.split("@")[0] || user.id.toLowerCase()}
+                          </span>
+                        </td>
 
-                      {/* 3. Kd Wil */}
-                      <td className="py-3.5 px-4 border-r border-slate-200 dark:border-slate-700">
-                        <div className="font-medium text-slate-900 dark:text-white text-xs">
-                          {user.kodeWilayah}
-                        </div>
-                      </td>
+                        {/* 3. Kd Wil */}
+                        <td className="py-3.5 px-4 border-r border-slate-200 dark:border-slate-700">
+                          <div className="font-medium text-slate-900 dark:text-white text-xs">
+                            {user.kodeWilayah}
+                          </div>
+                        </td>
 
-                      {/* 4. Kd Wil Kerja */}
-                      <td className="py-3.5 px-4 border-r border-slate-200 dark:border-slate-700">
-                        <div className="font-medium text-slate-900 dark:text-white leading-tight">
-                          {user.kodeWilayahKerja || user.namaWilayah}
-                        </div>
-                      </td>
+                        {/* 4. Kd Wil Kerja */}
+                        <td className="py-3.5 px-4 border-r border-slate-200 dark:border-slate-700">
+                          <div className="font-medium text-slate-900 dark:text-white leading-tight">
+                            {user.kodeWilayahKerja || user.namaWilayah}
+                          </div>
+                        </td>
 
-                      {/* 5. Nm Role */}
-                      <td className="py-3.5 px-4 border-r border-slate-200 dark:border-slate-700">
-                        <div className="font-medium text-slate-900 dark:text-white text-xs">
-                          {user.role === "ADMIN" ? "Admin Sistem" : "Petugas P3DW"}
-                        </div>
-                      </td>
+                        {/* 5. Nm Role */}
+                        <td className="py-3.5 px-4 border-r border-slate-200 dark:border-slate-700">
+                          <div className="font-medium text-slate-900 dark:text-white text-xs">
+                            {user.role === "ADMIN" ? "Admin Sistem" : "Petugas P3DW"}
+                          </div>
+                        </td>
 
-                      {/* 6. Aksi */}
-                      <td className="py-3.5 px-4 text-center whitespace-nowrap">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <button
-                              type="button"
-                              className="w-20 sm:w-24 h-8 rounded-lg border border-[#08874f] dark:border-emerald-500 bg-white dark:bg-slate-900 hover:bg-emerald-50/70 dark:hover:bg-slate-800 flex items-center justify-center transition-all cursor-pointer shadow-2xs mx-auto focus:outline-none focus:ring-2 focus:ring-[#08874f]/30"
-                              title="Pilih Aksi"
+                        {/* 6. Aksi */}
+                        <td className="py-3.5 px-4 text-center whitespace-nowrap">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <button
+                                type="button"
+                                className="w-20 sm:w-24 h-8 rounded-lg border border-[#08874f] dark:border-emerald-500 bg-white dark:bg-slate-900 hover:bg-emerald-50/70 dark:hover:bg-slate-800 flex items-center justify-center transition-all cursor-pointer shadow-2xs mx-auto focus:outline-none focus:ring-2 focus:ring-[#08874f]/30"
+                                title="Pilih Aksi"
+                              >
+                                <ChevronDown size={16} className="text-[#08874f] dark:text-emerald-400 stroke-[2.5]" />
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent
+                              align="end"
+                              className="w-36 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-xl rounded-xl p-1.5 z-50 pointer-events-auto"
                             >
-                              <ChevronDown size={16} className="text-[#08874f] dark:text-emerald-400 stroke-[2.5]" />
-                            </button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent
-                            align="end"
-                            className="w-36 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-xl rounded-xl p-1.5 z-50 pointer-events-auto"
-                          >
-                            <DropdownMenuItem
-                              onClick={() => handleOpenDetailModal(user)}
-                              className="flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors focus:bg-slate-100 dark:focus:bg-slate-800"
-                            >
-                              <Pencil size={14} className="text-slate-500 dark:text-slate-400 shrink-0 stroke-[2.2]" />
-                              <span>Detail</span>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => handleOpenDeleteModal(user)}
-                              className="flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-rose-600 dark:text-rose-400 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer transition-colors focus:bg-rose-50 dark:focus:bg-rose-950/40"
-                            >
-                              <Trash2 size={14} className="text-rose-600 dark:text-rose-400 shrink-0 stroke-[2.2]" />
-                              <span>Hapus</span>
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+                              <DropdownMenuItem
+                                onClick={() => handleOpenDetailModal(user)}
+                                className="flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors focus:bg-slate-100 dark:focus:bg-slate-800"
+                              >
+                                <Pencil size={14} className="text-slate-500 dark:text-slate-400 shrink-0 stroke-[2.2]" />
+                                <span>Detail</span>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleOpenDeleteModal(user)}
+                                className="flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-rose-600 dark:text-rose-400 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer transition-colors focus:bg-rose-50 dark:focus:bg-rose-950/40"
+                              >
+                                <Trash2 size={14} className="text-rose-600 dark:text-rose-400 shrink-0 stroke-[2.2]" />
+                                <span>Hapus</span>
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination Standar Bapenda */}
+          <CustomTablePagination
+            currentPage={currentPage}
+            pageSize={pageSize}
+            totalItems={totalItems}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={(newSize) => {
+              setPageSize(newSize);
+              setCurrentPage(1);
+            }}
+            pageSizeOptions={[5, 10, 20, 50]}
+          />
         </div>
-
-        {/* Pagination */}
-        <CustomTablePagination
-          currentPage={currentPage}
-          pageSize={pageSize}
-          totalItems={totalItems}
-          onPageChange={setCurrentPage}
-          onPageSizeChange={(newSize) => {
-            setPageSize(newSize);
-            setCurrentPage(1);
-          }}
-        />
       </MainCard>
 
       {/* =========================================================================
