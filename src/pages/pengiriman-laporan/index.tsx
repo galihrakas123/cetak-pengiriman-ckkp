@@ -1,15 +1,13 @@
 import React, { useState } from "react";
 import { 
   Building2, 
-  Calendar, 
   Download, 
-  Printer,
-  Square,
-  ChevronDown,
+  Printer, 
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getRekapSamsat, getSummaryStats } from "@/services/mockData";
 import { CustomTablePagination } from "@/components/features/table/CustomTablePagination";
+import { SearchableSelect } from "@/components/features/select/SearchableSelect";
 
 const PengirimanLaporanPage: React.FC = () => {
   const [selectedBulan, setSelectedBulan] = useState("Oktober 2026");
@@ -46,22 +44,25 @@ const PengirimanLaporanPage: React.FC = () => {
 
       {/* Filter Toolbar */}
       <div className="bg-white dark:bg-slate-800/90 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-xs p-4 flex flex-wrap items-center justify-between gap-3 w-full">
-        <div className="flex items-center gap-2">
-          <Calendar size={15} className="text-[#08874f] dark:text-emerald-400" />
-          <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wide">Periode:</span>
-          <div className="relative">
-            <select
+        <div className="flex items-center gap-2.5">
+          <span className="text-xs font-bold text-slate-800 dark:text-slate-100 shrink-0">
+            Periode:
+          </span>
+          <div className="w-44 sm:w-48">
+            <SearchableSelect
               value={selectedBulan}
-              onChange={(e) => setSelectedBulan(e.target.value)}
-              className="appearance-none bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs rounded-xl px-3.5 py-2 pr-8 focus:outline-none focus:ring-1 focus:ring-[#08874f] focus:border-[#08874f] transition-all cursor-pointer font-medium"
-            >
-              <option value="Oktober 2026">Oktober 2026</option>
-              <option value="September 2026">September 2026</option>
-              <option value="Agustus 2026">Agustus 2026</option>
-            </select>
-            <ChevronDown
-              size={14}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#08874f] dark:text-emerald-400 stroke-[2.2] pointer-events-none"
+              onChange={(val) => {
+                setSelectedBulan(val);
+                setCurrentPage(1);
+              }}
+              enableSearch={false}
+              options={[
+                { value: "Oktober 2026", label: "Oktober 2026" },
+                { value: "September 2026", label: "September 2026" },
+                { value: "Agustus 2026", label: "Agustus 2026" },
+              ]}
+              placeholder="Pilih Periode"
+              buttonClassName="h-[38px] text-xs py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700"
             />
           </div>
         </div>
@@ -87,20 +88,20 @@ const PengirimanLaporanPage: React.FC = () => {
           <div className="overflow-x-auto w-full">
             <table className="w-full text-left text-xs border-collapse">
               <thead className="bg-[#08874f] text-white">
-                <tr>
-                  <th className="py-3 px-4 font-semibold border-r border-white/20 whitespace-nowrap">
+                <tr className="border-b border-emerald-800 dark:border-slate-700">
+                  <th className="py-3 px-4 font-semibold border-r border-white/60 whitespace-nowrap">
                     Nama Unit Kerja / Samsat
                   </th>
-                  <th className="py-3 px-4 font-semibold text-right border-r border-white/20 whitespace-nowrap">
+                  <th className="py-3 px-4 font-semibold text-right border-r border-white/60 whitespace-nowrap">
                     Total Berkas
                   </th>
-                  <th className="py-3 px-4 font-semibold text-right border-r border-white/20 whitespace-nowrap">
+                  <th className="py-3 px-4 font-semibold text-right border-r border-white/60 whitespace-nowrap">
                     Sukses Terkirim
                   </th>
-                  <th className="py-3 px-4 font-semibold text-right border-r border-white/20 whitespace-nowrap">
+                  <th className="py-3 px-4 font-semibold text-right border-r border-white/60 whitespace-nowrap">
                     Dalam Perjalanan
                   </th>
-                  <th className="py-3 px-4 font-semibold text-right border-r border-white/20 whitespace-nowrap">
+                  <th className="py-3 px-4 font-semibold text-right border-r border-white/60 whitespace-nowrap">
                     Gagal / Retur
                   </th>
                   <th className="py-3 px-4 font-semibold text-center whitespace-nowrap">
@@ -108,22 +109,22 @@ const PengirimanLaporanPage: React.FC = () => {
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900">
+              <tbody className="divide-y divide-slate-200 dark:divide-slate-700 bg-white dark:bg-slate-900">
                 {paginatedData.map((item, idx) => (
-                  <tr key={idx} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/60 transition-colors">
-                    <td className="py-3.5 px-4 font-medium text-slate-800 dark:text-slate-100">
+                  <tr key={idx} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/60 transition-colors border-b border-slate-200 dark:border-slate-700">
+                    <td className="py-3.5 px-4 font-medium text-slate-800 dark:text-slate-100 border-r border-slate-200 dark:border-slate-700">
                       {item.nama}
                     </td>
-                    <td className="py-3.5 px-4 text-right font-semibold text-slate-900 dark:text-white">
+                    <td className="py-3.5 px-4 text-right font-semibold text-slate-900 dark:text-white border-r border-slate-200 dark:border-slate-700">
                       {item.total.toLocaleString("id-ID")}
                     </td>
-                    <td className="py-3.5 px-4 text-right font-medium text-emerald-600 dark:text-emerald-400">
+                    <td className="py-3.5 px-4 text-right font-medium text-emerald-600 dark:text-emerald-400 border-r border-slate-200 dark:border-slate-700">
                       {item.sukses.toLocaleString("id-ID")}
                     </td>
-                    <td className="py-3.5 px-4 text-right text-slate-600 dark:text-slate-300">
+                    <td className="py-3.5 px-4 text-right text-slate-600 dark:text-slate-300 border-r border-slate-200 dark:border-slate-700">
                       {item.proses.toLocaleString("id-ID")}
                     </td>
-                    <td className="py-3.5 px-4 text-right font-medium text-rose-600 dark:text-rose-400">
+                    <td className="py-3.5 px-4 text-right font-medium text-rose-600 dark:text-rose-400 border-r border-slate-200 dark:border-slate-700">
                       {item.gagal.toLocaleString("id-ID")}
                     </td>
                     <td className="py-3.5 px-4 text-center font-bold text-emerald-600 dark:text-emerald-400">

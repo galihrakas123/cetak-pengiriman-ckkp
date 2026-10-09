@@ -13,6 +13,7 @@ import {
 } from "@/services/localStorageService";
 import { useTheme } from "@/components/theme-provider";
 import { ConfigContext } from "./configContext";
+import { userService } from "@/services/userService";
 
 type TData = User;
 
@@ -21,29 +22,24 @@ type TAuthContext = {
   isLoading?: boolean;
   isInitialised: boolean;
   user: TData | null;
-  login: (username: any, password: any) => void;
+  login: (username: string, password: string) => Promise<User>;
   logout: () => void;
 };
 
-const mockDevUser: TData = {
-  username: "Administrator",
-  role: "admin",
-  bidang: "admin",
-  kode_wilayah: "all",
-  nama_wilayah: "SEMUA WILAYAH",
-  userID: "admin-dev",
-};
+const savedLocalUser = getLocalStorage("userData");
+const savedLocalToken = getLocalStorage("token");
+const isHasSession = Boolean(savedLocalUser && savedLocalToken);
 
 const initialState: AccountState = {
-  isLoggedIn: true,
+  isLoggedIn: isHasSession,
   isLoading: false,
-  isInitialised: true,
-  user: mockDevUser,
+  isInitialised: false,
+  user: isHasSession ? savedLocalUser : null,
 };
 
 const AuthContext = createContext<TAuthContext>({
   ...initialState,
-  login: () => {},
+  login: async () => ({} as User),
   logout: () => {},
 });
 
@@ -52,17 +48,82 @@ export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
   const { dispatch: dispatchConfig } = useContext(ConfigContext);
   const { setTheme } = useTheme();
 
-  const login = async (username: any, _password: any) => {
-    const user = { ...mockDevUser, username: username || "Administrator" };
-    setLocalStorage("userData", user);
-    setLocalStorage("token", "mock-dev-token");
+  const login = async (username: string, password: string): Promise<User> => {
+    const cleanUser = username?.trim().toLowerCase();
+    const cleanPass = password?.trim();
+
+    // Dapatkan data user terbaru dari userService (termasuk yang ditambahkan di Manajemen User)
+    const users = userService.getAllUsers();
+
+    const matched = users.find((u) => {
+      const uUsername = u.username?.toLowerCase() || "";
+      const uEmail = u.email?.toLowerCase() || "";
+      return uUsername === cleanUser || uEmail === cleanUser;
+    });
+
+    if (!matched) {
+      throw new Error("Username atau email tidak terdaftar di sistem.");
+    }
+
+    if (matched.password !== cleanPass) {
+      throw new Error("Kata sandi yang Anda masukkan salah.");
+    }
+
+    if (matched.status === "NONAKTIF") {
+      throw new Error(
+        "Akun Anda sedang dinonaktifkan oleh Administrator. Hubungi pihak Bapenda."
+      );
+    }
+
+    // Perbarui waktu terakhir login
+    const now = new Date();
+    const timeStr = `${String(now.getDate()).padStart(2, "0")}-${String(
+      now.getMonth() + 1
+    ).padStart(2, "0")}-${now.getFullYear()} ${String(now.getHours()).padStart(
+      2,
+      "0"
+    )}:${String(now.getMinutes()).padStart(2, "0")}`;
+    try {
+      userService.updateUser(matched.id, { terakhirLogin: timeStr });
+    } catch {
+      // ignore
+    }
+
+    const sessionUser: User = {
+      userID: matched.id,
+      username: matched.username || matched.nama,
+      nama: matched.nama,
+      surname: matched.surname || matched.nama,
+      email: matched.email,
+      role: matched.role.toLowerCase(),
+      bidang: matched.role.toLowerCase(),
+      kode_wilayah: matched.kodeWilayah || "all",
+      nama_wilayah: matched.namaWilayah || "SEMUA WILAYAH",
+      kodeWilayahKerja: matched.kodeWilayahKerja,
+    };
+
+    setLocalStorage("userData", sessionUser);
+    setLocalStorage("token", `bapenda-auth-${matched.id}-${Date.now()}`);
+
     dispatch({
       type: LOGIN,
       payload: {
-        user,
+        user: sessionUser,
         isLoggedIn: true,
       },
     });
+
+    dispatchConfig({
+      type: "SET_KODE_WILAYAH",
+      payload: sessionUser.kode_wilayah || "all",
+    });
+
+    dispatchConfig({
+      type: "SET_NAMA_WILAYAH",
+      payload: sessionUser.nama_wilayah || "SEMUA WILAYAH",
+    });
+
+    return sessionUser;
   };
 
   const logout = async () => {
@@ -79,18 +140,36 @@ export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
-    // Inisialisasi local mock session jika belum ada di localStorage
-    const savedUser = getLocalStorage("userData") || mockDevUser;
-    setLocalStorage("userData", savedUser);
-    setLocalStorage("token", "mock-dev-token");
+    const savedUser = getLocalStorage("userData");
+    const savedToken = getLocalStorage("token");
 
-    dispatch({
-      type: ACCOUNT_INITIALISE,
-      payload: {
-        isLoggedIn: true,
-        user: savedUser,
-      },
-    });
+    if (savedUser && savedToken) {
+      dispatch({
+        type: ACCOUNT_INITIALISE,
+        payload: {
+          isLoggedIn: true,
+          user: savedUser,
+        },
+      });
+
+      dispatchConfig({
+        type: "SET_KODE_WILAYAH",
+        payload: savedUser.kode_wilayah || "all",
+      });
+
+      dispatchConfig({
+        type: "SET_NAMA_WILAYAH",
+        payload: savedUser.nama_wilayah || "SEMUA WILAYAH",
+      });
+    } else {
+      dispatch({
+        type: ACCOUNT_INITIALISE,
+        payload: {
+          isLoggedIn: false,
+          user: null,
+        },
+      });
+    }
 
     const defaultWilayahOptions = [
       { value: "all", label: "SEMUA P3D / WILAYAH" },
@@ -106,16 +185,6 @@ export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
     dispatchConfig({
       type: "SET_KODE_WILAYAH_OPTIONS",
       payload: defaultWilayahOptions,
-    });
-
-    dispatchConfig({
-      type: "SET_KODE_WILAYAH",
-      payload: savedUser.kode_wilayah || "all",
-    });
-
-    dispatchConfig({
-      type: "SET_NAMA_WILAYAH",
-      payload: savedUser.nama_wilayah || "SEMUA WILAYAH",
     });
   }, [dispatchConfig]);
 

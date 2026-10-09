@@ -83,7 +83,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
                       className="px-2.5 py-1.5 bg-[#08874f] hover:bg-[#06683d] text-white text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer"
                     >
                       <Printer size={13} />
-                      Cetak Langsung
+                      Cetak SKKP
                     </button>
                     <button
                       type="button"
@@ -138,7 +138,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
         queryClient.invalidateQueries("cetak-stats");
 
         toast({
-          title: "Cetak Langsung Berhasil!",
+          title: "Cetak SKKP Berhasil!",
           description: `Berkas SKKP Nopol ${data.nopol} berhasil dicetak dan siap diproses ke logistik.`,
         });
 
@@ -183,7 +183,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
                   className="px-2.5 py-1.5 bg-[#08874f] hover:bg-[#06683d] text-white text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer"
                 >
                   <Printer size={13} />
-                  Cetak Langsung
+                  Cetak SKKP
                 </button>
                 <button
                   type="button"

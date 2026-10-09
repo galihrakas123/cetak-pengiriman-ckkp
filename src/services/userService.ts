@@ -5,11 +5,15 @@ export interface UserRecord {
   kodeWilayah: string;
   namaWilayah: string;
   email: string;
-  role: "ADMIN" | "PETUGAS_CETAK" | "PETUGAS_LOGISTIK" | "OPERATOR";
+  role: "ADMIN" | "PETUGAS";
   status: "AKTIF" | "NONAKTIF";
   tanggalDibuat: string;
   terakhirLogin?: string;
   password?: string;
+  username?: string;
+  surname?: string;
+  kodeWilayahKerja?: string;
+  jenisLayanan?: string;
 }
 
 export interface WilayahOption {
@@ -63,6 +67,10 @@ const INITIAL_USERS: UserRecord[] = [
     status: "AKTIF",
     tanggalDibuat: "01-09-2026",
     terakhirLogin: "08-10-2026 14:20",
+    password: "1",
+    username: "budi.santoso",
+    surname: "Budi Santoso, S.Kom",
+    kodeWilayahKerja: "Bapenda Jabar Pusat",
   },
   {
     id: "USR-002",
@@ -71,10 +79,14 @@ const INITIAL_USERS: UserRecord[] = [
     kodeWilayah: "3273",
     namaWilayah: "Samsat Kota Bandung I Pajajaran",
     email: "rizky.ramadhan@bapenda.jabarprov.go.id",
-    role: "PETUGAS_CETAK",
+    role: "PETUGAS",
     status: "AKTIF",
     tanggalDibuat: "05-09-2026",
     terakhirLogin: "08-10-2026 15:10",
+    password: "1",
+    username: "rizky.ramadhan",
+    surname: "Rizky Ramadhan",
+    kodeWilayahKerja: "Samsat Kota Bandung I Pajajaran",
   },
   {
     id: "USR-003",
@@ -83,10 +95,14 @@ const INITIAL_USERS: UserRecord[] = [
     kodeWilayah: "3273B",
     namaWilayah: "Samsat Kota Bandung II Kawaluyaan",
     email: "siti.rahmawati@bapenda.jabarprov.go.id",
-    role: "PETUGAS_CETAK",
+    role: "PETUGAS",
     status: "AKTIF",
     tanggalDibuat: "10-09-2026",
     terakhirLogin: "08-10-2026 12:45",
+    password: "1",
+    username: "siti.rahmawati",
+    surname: "Siti Rahmawati",
+    kodeWilayahKerja: "Samsat Kota Bandung II Kawaluyaan",
   },
   {
     id: "USR-004",
@@ -95,10 +111,14 @@ const INITIAL_USERS: UserRecord[] = [
     kodeWilayah: "3271",
     namaWilayah: "Samsat Kota Bogor",
     email: "ahmad.junaedi@bapenda.jabarprov.go.id",
-    role: "PETUGAS_LOGISTIK",
+    role: "PETUGAS",
     status: "AKTIF",
     tanggalDibuat: "12-09-2026",
     terakhirLogin: "07-10-2026 17:30",
+    password: "1",
+    username: "ahmad.junaedi",
+    surname: "Ahmad Junaedi",
+    kodeWilayahKerja: "Samsat Kota Bogor",
   },
   {
     id: "USR-005",
@@ -107,10 +127,14 @@ const INITIAL_USERS: UserRecord[] = [
     kodeWilayah: "3275",
     namaWilayah: "Samsat Kota Bekasi",
     email: "yudha.pratama@bapenda.jabarprov.go.id",
-    role: "PETUGAS_CETAK",
+    role: "PETUGAS",
     status: "AKTIF",
     tanggalDibuat: "15-09-2026",
     terakhirLogin: "08-10-2026 10:15",
+    password: "1",
+    username: "yudha.pratama",
+    surname: "Yudha Pratama",
+    kodeWilayahKerja: "Samsat Kota Bekasi",
   },
   {
     id: "USR-006",
@@ -119,10 +143,14 @@ const INITIAL_USERS: UserRecord[] = [
     kodeWilayah: "3274",
     namaWilayah: "Samsat Kota Cirebon",
     email: "hendra.gunawan@bapenda.jabarprov.go.id",
-    role: "PETUGAS_LOGISTIK",
+    role: "PETUGAS",
     status: "AKTIF",
     tanggalDibuat: "20-09-2026",
     terakhirLogin: "06-10-2026 16:00",
+    password: "1",
+    username: "hendra.gunawan",
+    surname: "Hendra Gunawan",
+    kodeWilayahKerja: "Samsat Kota Cirebon",
   },
   {
     id: "USR-007",
@@ -131,10 +159,14 @@ const INITIAL_USERS: UserRecord[] = [
     kodeWilayah: "3278",
     namaWilayah: "Samsat Kota Tasikmalaya",
     email: "nurul.hidayah@bapenda.jabarprov.go.id",
-    role: "OPERATOR",
+    role: "PETUGAS",
     status: "NONAKTIF",
     tanggalDibuat: "25-09-2026",
     terakhirLogin: "02-10-2026 09:00",
+    password: "1",
+    username: "nurul.hidayah",
+    surname: "Nurul Hidayah, A.Md",
+    kodeWilayahKerja: "Samsat Kota Tasikmalaya",
   },
 ];
 
@@ -144,7 +176,12 @@ function loadUsers(): UserRecord[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
-      return JSON.parse(raw);
+      const parsed: any[] = JSON.parse(raw);
+      return parsed.map((u) => ({
+        ...u,
+        role: (u.role === "ADMIN" ? "ADMIN" : "PETUGAS") as "ADMIN" | "PETUGAS",
+        password: u.password || "1",
+      }));
     }
   } catch (e) {
     console.error("Gagal membaca database user lokal:", e);
@@ -178,9 +215,13 @@ export const userService = {
     kodeWilayah: string;
     namaWilayah: string;
     email: string;
-    role: "ADMIN" | "PETUGAS_CETAK" | "PETUGAS_LOGISTIK" | "OPERATOR";
+    role: "ADMIN" | "PETUGAS";
     status?: "AKTIF" | "NONAKTIF";
     password?: string;
+    username?: string;
+    surname?: string;
+    kodeWilayahKerja?: string;
+    jenisLayanan?: string;
   }): UserRecord {
     const today = new Date();
     const dateStr = `${String(today.getDate()).padStart(2, "0")}-${String(today.getMonth() + 1).padStart(2, "0")}-${today.getFullYear()}`;
@@ -198,7 +239,11 @@ export const userService = {
       status: payload.status || "AKTIF",
       tanggalDibuat: dateStr,
       terakhirLogin: "-",
-      password: payload.password || "Bapenda123!",
+      password: payload.password || "1",
+      username: payload.username?.trim(),
+      surname: payload.surname?.trim(),
+      kodeWilayahKerja: payload.kodeWilayahKerja,
+      jenisLayanan: payload.jenisLayanan,
     };
 
     userDatabase.unshift(newUser);

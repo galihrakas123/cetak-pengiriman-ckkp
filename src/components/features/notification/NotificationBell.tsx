@@ -120,14 +120,14 @@ export const NotificationBell: React.FC = () => {
 
                 {/* 2 Tombol Aksi Sesuai Instruksi: Cetak Langsung & Tandai Dibaca */}
                 <div className="flex items-center gap-2 pt-1">
-                  {/* Tombol 1: Cetak Langsung */}
+                  {/* Tombol 1: Cetak SKKP */}
                   <button
                     type="button"
                     onClick={() => cetakLangsung(item.id)}
                     className="flex-1 py-1.5 px-2.5 bg-[#08874f] hover:bg-[#06683d] text-white text-xs font-semibold rounded-lg flex items-center justify-center gap-1.5 transition-colors shadow-xs cursor-pointer"
                   >
                     <Printer size={13} />
-                    Cetak Langsung
+                    Cetak SKKP
                   </button>
 
                   {/* Tombol 2: Tandai Dibaca */}

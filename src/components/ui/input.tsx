@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 export interface InputProps
   extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
+  labelClassName?: string;
   helperText?: string;
   errorMessage?: string;
   isError?: boolean;
@@ -20,6 +21,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       className,
       type,
       label,
+      labelClassName,
       helperText,
       errorMessage,
       isError = false,
@@ -111,9 +113,10 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           <label
             htmlFor={inputId}
             className={cn(
-              "text-[11px] font-bold uppercase tracking-wide block transition-colors",
-              hasError ? "text-[#dc2626]" : "text-slate-800 dark:text-slate-200",
-              disabled && "text-slate-400 dark:text-slate-500"
+              "text-xs font-semibold text-slate-700 dark:text-slate-200 block transition-colors",
+              hasError ? "text-[#dc2626]" : "text-slate-700 dark:text-slate-200",
+              disabled && "text-slate-400 dark:text-slate-500",
+              labelClassName
             )}
           >
             {label}

@@ -7,7 +7,6 @@ import {
   AlertCircle, 
   Download, 
   TrendingUp,
-  ChevronDown
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +17,7 @@ import {
 import { cetakSkkpService } from "@/services/cetakSkkpService";
 import { TrendPengirimanChart } from "@/components/features/dashboard/TrendPengirimanChart";
 import { EkspedisiDonutChart } from "@/components/features/dashboard/EkspedisiDonutChart";
+import { SearchableSelect } from "@/components/features/select/SearchableSelect";
 
 const BerandaPage: React.FC = () => {
   const stats = getSummaryStats();
@@ -74,50 +74,45 @@ const BerandaPage: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
             {/* Filter Samsat / Wilayah (3 Kolom) */}
             <div className="md:col-span-3 space-y-1.5">
-              <label className="text-[11px] font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wide block">
-                Samsat / Wilayah
+              <label className="text-xs font-bold text-slate-800 dark:text-slate-100 block">
+                Samsat / Wilayah:
               </label>
-              <div className="relative">
-                <select
-                  value={selectedSamsat}
-                  onChange={(e) => setSelectedSamsat(e.target.value)}
-                  className="w-full appearance-none bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs rounded-xl px-3.5 py-2.5 pr-8 focus:outline-none focus:ring-1 focus:ring-[#08874f] focus:border-[#08874f] transition-all cursor-pointer font-medium"
-                >
-                  <option value="ALL">Semua Samsat Wilayah Jawa Barat</option>
-                  <option value="Bandung">Samsat Wilayah Bandung (Pajajaran, Kawaluyaan, Tengah, Barat, Timur)</option>
-                  <option value="Bogor">Samsat Kota & Kabupaten Bogor</option>
-                  <option value="Bekasi">Samsat Kota & Kabupaten Bekasi</option>
-                  <option value="Cirebon">Samsat Kota & Kabupaten Cirebon</option>
-                  <option value="Karawang">Samsat Kabupaten Karawang</option>
-                  <option value="Tasikmalaya">Samsat Kota & Kabupaten Tasikmalaya</option>
-                </select>
-                <ChevronDown
-                  size={14}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#08874f] dark:text-emerald-400 stroke-[2.2] pointer-events-none"
-                />
-              </div>
+              <SearchableSelect
+                value={selectedSamsat}
+                onChange={setSelectedSamsat}
+                enableSearch={true}
+                searchPlaceholder="Cari Samsat / Wilayah..."
+                options={[
+                  { value: "ALL", label: "Semua Samsat Wilayah Jawa Barat" },
+                  { value: "Bandung", label: "Samsat Wilayah Bandung (Pajajaran, Kawaluyaan, Tengah, Barat, Timur)" },
+                  { value: "Bogor", label: "Samsat Kota & Kabupaten Bogor" },
+                  { value: "Bekasi", label: "Samsat Kota & Kabupaten Bekasi" },
+                  { value: "Cirebon", label: "Samsat Kota & Kabupaten Cirebon" },
+                  { value: "Karawang", label: "Samsat Kabupaten Karawang" },
+                  { value: "Tasikmalaya", label: "Samsat Kota & Kabupaten Tasikmalaya" },
+                ]}
+                placeholder="Pilih Samsat / Wilayah"
+                buttonClassName="h-10 text-xs py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700"
+              />
             </div>
 
             {/* Filter Tahun (1 Kolom) */}
             <div className="md:col-span-1 space-y-1.5">
-              <label className="text-[11px] font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wide block">
-                Tahun
+              <label className="text-xs font-bold text-slate-800 dark:text-slate-100 block">
+                Tahun:
               </label>
-              <div className="relative">
-                <select
-                  value={selectedTahun}
-                  onChange={(e) => setSelectedTahun(e.target.value)}
-                  className="w-full appearance-none bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs rounded-xl px-3.5 py-2.5 pr-8 focus:outline-none focus:ring-1 focus:ring-[#08874f] focus:border-[#08874f] transition-all cursor-pointer font-medium"
-                >
-                  <option value="2026">Tahun 2026</option>
-                  <option value="2025">Tahun 2025</option>
-                  <option value="ALL">Semua Tahun</option>
-                </select>
-                <ChevronDown
-                  size={14}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#08874f] dark:text-emerald-400 stroke-[2.2] pointer-events-none"
-                />
-              </div>
+              <SearchableSelect
+                value={selectedTahun}
+                onChange={setSelectedTahun}
+                enableSearch={false}
+                options={[
+                  { value: "2026", label: "Tahun 2026" },
+                  { value: "2025", label: "Tahun 2025" },
+                  { value: "ALL", label: "Semua Tahun" },
+                ]}
+                placeholder="Pilih Tahun"
+                buttonClassName="h-10 text-xs py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700"
+              />
             </div>
           </div>
         </div>
@@ -228,43 +223,46 @@ const BerandaPage: React.FC = () => {
           <div className="overflow-x-auto w-full">
             <table className="w-full text-left text-xs border-collapse">
               <thead className="bg-[#08874f] text-white">
-                <tr>
-                  <th className="py-3 px-3 w-12 text-center font-semibold border-r border-white/20 whitespace-nowrap">
+                <tr className="border-b border-emerald-800 dark:border-slate-700">
+                  <th className="py-3 px-3 w-12 text-center font-semibold border-r border-white/60 whitespace-nowrap">
                     No
                   </th>
-                  <th className="py-3 px-4 font-semibold border-r border-white/20 whitespace-nowrap">
+                  <th className="py-3 px-4 w-36 font-semibold border-r border-white/60 whitespace-nowrap">
                     No. Polisi
                   </th>
-                  <th className="py-3 px-4 font-semibold border-r border-white/20 whitespace-nowrap">
-                    Nama Pemilik
+                  <th className="py-3 px-4 min-w-[190px] font-semibold border-r border-white/60 whitespace-nowrap">
+                    Wajib Pajak
                   </th>
-                  <th className="py-3 px-4 font-semibold border-r border-white/20 whitespace-nowrap">
+                  <th className="py-3 px-4 min-w-[190px] font-semibold border-r border-white/60 whitespace-nowrap">
+                    Samsat Asal
+                  </th>
+                  <th className="py-3 px-4 w-32 font-semibold border-r border-white/60 whitespace-nowrap">
                     Ekspedisi
                   </th>
-                  <th className="py-3 px-4 font-semibold border-r border-white/20 whitespace-nowrap">
+                  <th className="py-3 px-4 w-36 font-semibold border-r border-white/60 whitespace-nowrap">
                     Tanggal Pengajuan
                   </th>
-                  <th className="py-3 px-4 font-semibold text-center whitespace-nowrap">
-                    Status Cetak
+                  <th className="py-3 px-4 w-36 font-semibold text-center whitespace-nowrap">
+                    Status
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-700/60 bg-white dark:bg-slate-900">
+              <tbody className="divide-y divide-slate-200 dark:divide-slate-700 bg-white dark:bg-slate-900">
                 {recentCetakList.length > 0 ? (
                   recentCetakList.map((item, index) => {
                     const isSudahDicetak = item.statusCetak === "SUDAH_DICETAK";
                     return (
                       <tr
                         key={item.id}
-                        className="hover:bg-slate-50/70 dark:hover:bg-slate-800/60 transition-colors"
+                        className="hover:bg-slate-50/70 dark:hover:bg-slate-800/60 transition-colors border-b border-slate-200 dark:border-slate-700"
                       >
                         {/* 1. No */}
-                        <td className="py-3.5 px-3 text-center font-mono font-medium text-slate-500 dark:text-slate-400">
+                        <td className="py-3.5 px-3 text-center font-mono font-medium text-slate-500 dark:text-slate-400 border-r border-slate-200 dark:border-slate-700">
                           {index + 1}
                         </td>
 
                         {/* 2. No. Polisi */}
-                        <td className="py-3.5 px-4 whitespace-nowrap">
+                        <td className="py-3.5 px-4 whitespace-nowrap border-r border-slate-200 dark:border-slate-700">
                           <div className="font-semibold text-[#08874f] dark:text-emerald-400 font-mono text-xs">
                             {item.nopol}
                           </div>
@@ -275,36 +273,27 @@ const BerandaPage: React.FC = () => {
                           )}
                         </td>
 
-                        {/* 3. Nama Pemilik */}
-                        <td className="py-3.5 px-4">
-                          <div className="font-medium text-slate-800 dark:text-slate-200">
-                            {item.namaPemilik}
-                          </div>
-                          <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-0.5">
-                            <span className="truncate max-w-[220px]">
-                              {item.jenisKendaraan || "Kendaraan Bermotor"}
-                            </span>
-                          </div>
-                          <div className="text-[10px] text-slate-400">
-                            {item.samsat}
-                          </div>
+                        {/* 3. Wajib Pajak (Ukuran sama dengan Samsat Asal) */}
+                        <td className="py-3.5 px-4 min-w-[190px] font-medium text-slate-800 dark:text-slate-100 border-r border-slate-200 dark:border-slate-700 whitespace-nowrap">
+                          {item.namaPemilik}
                         </td>
 
-                        {/* 4. Ekspedisi */}
-                        <td className="py-3.5 px-4 whitespace-nowrap">
-                          <span className="font-medium text-slate-800 dark:text-slate-200">
-                            {item.ekspedisi || item.opsiPengiriman || "-"}
-                          </span>
+                        {/* 4. Samsat Asal (Ukuran sama dengan Wajib Pajak) */}
+                        <td className="py-3.5 px-4 min-w-[190px] text-slate-700 dark:text-slate-300 font-medium border-r border-slate-200 dark:border-slate-700 whitespace-nowrap">
+                          {item.samsat}
                         </td>
 
-                        {/* 5. Tanggal Pengajuan */}
-                        <td className="py-3.5 px-4 whitespace-nowrap">
-                          <div className="text-slate-700 dark:text-slate-200 font-medium">
-                            {item.tanggalPengajuan}
-                          </div>
+                        {/* 5. Ekspedisi */}
+                        <td className="py-3.5 px-4 whitespace-nowrap border-r border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200">
+                          {item.ekspedisi || item.opsiPengiriman || "-"}
                         </td>
 
-                        {/* 6. Status Cetak */}
+                        {/* 6. Tanggal Pengajuan */}
+                        <td className="py-3.5 px-4 whitespace-nowrap border-r border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300">
+                          {item.tanggalPengajuan}
+                        </td>
+
+                        {/* 7. Status */}
                         <td className="py-3.5 px-4 text-center whitespace-nowrap">
                           {isSudahDicetak ? (
                             <Badge className="bg-[#08874f] hover:bg-[#06683d] text-white font-medium text-[11px] px-2.5 py-0.5 inline-flex items-center gap-1">
@@ -331,7 +320,7 @@ const BerandaPage: React.FC = () => {
                 ) : (
                   <tr>
                     <td
-                      colSpan={6}
+                      colSpan={7}
                       className="py-10 text-center text-slate-400 font-medium"
                     >
                       Tidak ada data antrean cetak SKKP untuk filter Samsat yang dipilih.

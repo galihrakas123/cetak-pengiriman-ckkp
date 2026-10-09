@@ -1,18 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { 
-  Filter, 
   Eye,
   Mail,
   FileText,
   User,
   MapPin,
   Check,
-  ChevronDown,
   Layers,
   Clock,
   Truck,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,16 +20,15 @@ import { Searchbar } from "@/components/ui/searchbar";
 import { 
   Dialog, 
   DialogContent, 
-  DialogHeader, 
   DialogTitle, 
   DialogDescription,
-  DialogFooter 
 } from "@/components/ui/dialog";
 import { getAllDeliveries } from "@/services/mockData";
 import { DeliveryRecord, DeliveryStatus } from "@/types";
 import { useNavigate } from "react-router-dom";
 import { CustomTablePagination } from "@/components/features/table/CustomTablePagination";
 import { DatePicker } from "@/components/features/date/DatePicker";
+import { SearchableSelect } from "@/components/features/select/SearchableSelect";
 import { format } from "date-fns";
 
 const PengirimanDataPage: React.FC = () => {
@@ -227,42 +225,49 @@ const PengirimanDataPage: React.FC = () => {
             containerClassName="w-full md:w-80"
           />
 
-          <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
-            <Filter size={15} className="text-[#08874f] dark:text-emerald-400" />
-
+          <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
             {/* Date Picker Filter */}
-            <div className="w-full sm:w-44">
-              <DatePicker
-                value={selectedDate}
-                onChangeDate={(d) => {
-                  setSelectedDate(d);
-                  setCurrentPage(1);
-                }}
-                placeholder="Pilih Tanggal"
-                buttonClassName="h-[38px] text-xs py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700"
-              />
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-slate-800 dark:text-slate-100 shrink-0">
+                Tanggal:
+              </span>
+              <div className="w-full sm:w-44">
+                <DatePicker
+                  value={selectedDate}
+                  onChangeDate={(d) => {
+                    setSelectedDate(d);
+                    setCurrentPage(1);
+                  }}
+                  placeholder="Pilih Tanggal"
+                  buttonClassName="h-[38px] text-xs py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700"
+                />
+              </div>
             </div>
             
             {/* Status Filter */}
-            <div className="relative">
-              <select
-                className="appearance-none bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs rounded-xl px-3.5 py-2 pr-8 focus:outline-none focus:ring-1 focus:ring-[#08874f] focus:border-[#08874f] transition-all cursor-pointer font-medium"
-                value={statusFilter}
-                onChange={(e) => {
-                  setStatusFilter(e.target.value);
-                  setCurrentPage(1);
-                }}
-              >
-                <option value="ALL">Semua Status</option>
-                <option value="PENDING">Menunggu Pengambilan</option>
-                <option value="DALAM_PROSES">Dalam Perjalanan</option>
-                <option value="TERKIRIM">Terkirim</option>
-                <option value="RETUR">Retur / Gagal</option>
-              </select>
-              <ChevronDown
-                size={14}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#08874f] dark:text-emerald-400 stroke-[2.2] pointer-events-none"
-              />
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-slate-800 dark:text-slate-100 shrink-0">
+                Status:
+              </span>
+              <div className="w-52 sm:w-56">
+                <SearchableSelect
+                  value={statusFilter}
+                  onChange={(val) => {
+                    setStatusFilter(val);
+                    setCurrentPage(1);
+                  }}
+                  enableSearch={false}
+                  options={[
+                    { value: "ALL", label: "Semua Status" },
+                    { value: "PENDING", label: "Menunggu Pengambilan" },
+                    { value: "DALAM_PROSES", label: "Dalam Perjalanan" },
+                    { value: "TERKIRIM", label: "Terkirim" },
+                    { value: "RETUR", label: "Retur / Gagal" },
+                  ]}
+                  placeholder="Pilih Status"
+                  buttonClassName="h-[38px] text-xs py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700"
+                />
+              </div>
             </div>
 
             {/* Tombol Reset Filter */}
@@ -289,29 +294,29 @@ const PengirimanDataPage: React.FC = () => {
           <div className="overflow-x-auto w-full">
             <table className="w-full text-left text-xs border-collapse">
               <thead className="bg-[#08874f] text-white">
-                <tr>
-                  <th className="py-3 px-4 font-semibold border-r border-white/20 whitespace-nowrap">
+                <tr className="border-b border-emerald-800 dark:border-slate-700">
+                  <th className="py-3 px-4 font-semibold border-r border-white/60 whitespace-nowrap">
                     No. Resi
                   </th>
-                  <th className="py-3 px-4 font-semibold border-r border-white/20 whitespace-nowrap">
+                  <th className="py-3 px-4 font-semibold border-r border-white/60 whitespace-nowrap">
                     No. Polisi
                   </th>
-                  <th className="py-3 px-4 font-semibold border-r border-white/20 whitespace-nowrap">
+                  <th className="py-3 px-4 font-semibold border-r border-white/60 whitespace-nowrap">
                     Wajib Pajak
                   </th>
-                  <th className="py-3 px-4 font-semibold border-r border-white/20 whitespace-nowrap">
+                  <th className="py-3 px-4 font-semibold border-r border-white/60 whitespace-nowrap">
                     Alamat Penerima
                   </th>
-                  <th className="py-3 px-4 font-semibold border-r border-white/20 whitespace-nowrap">
+                  <th className="py-3 px-4 font-semibold border-r border-white/60 whitespace-nowrap">
                     Samsat Asal
                   </th>
-                  <th className="py-3 px-4 font-semibold border-r border-white/20 whitespace-nowrap">
+                  <th className="py-3 px-4 font-semibold border-r border-white/60 whitespace-nowrap">
                     Ekspedisi
                   </th>
-                  <th className="py-3 px-4 font-semibold border-r border-white/20 whitespace-nowrap">
+                  <th className="py-3 px-4 font-semibold border-r border-white/60 whitespace-nowrap">
                     Tanggal Kirim
                   </th>
-                  <th className="py-3 px-4 font-semibold text-center border-r border-white/20 whitespace-nowrap">
+                  <th className="py-3 px-4 font-semibold text-center border-r border-white/60 whitespace-nowrap">
                     Status
                   </th>
                   <th className="py-3 px-4 font-semibold text-center w-20 whitespace-nowrap">
@@ -319,32 +324,32 @@ const PengirimanDataPage: React.FC = () => {
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900">
+              <tbody className="divide-y divide-slate-200 dark:divide-slate-700 bg-white dark:bg-slate-900">
                 {paginatedData.length > 0 ? (
                   paginatedData.map((row: DeliveryRecord) => (
-                    <tr key={row.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/70 transition-colors">
-                      <td className="py-3.5 px-4 font-mono font-medium text-slate-800 dark:text-slate-100">
+                    <tr key={row.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/70 transition-colors border-b border-slate-200 dark:border-slate-700">
+                      <td className="py-3.5 px-4 font-mono font-medium text-slate-800 dark:text-slate-100 border-r border-slate-200 dark:border-slate-700">
                         {row.noResi}
                       </td>
-                      <td className="py-3.5 px-4 font-semibold text-[#08874f] dark:text-emerald-400">
+                      <td className="py-3.5 px-4 font-semibold text-[#08874f] dark:text-emerald-400 border-r border-slate-200 dark:border-slate-700">
                         {row.noPolisi}
                       </td>
-                      <td className="py-3.5 px-4 text-slate-800 dark:text-slate-100 font-medium">
+                      <td className="py-3.5 px-4 text-slate-800 dark:text-slate-100 font-medium border-r border-slate-200 dark:border-slate-700">
                         {row.namaWp}
                       </td>
-                      <td className="py-3.5 px-4 text-slate-500 dark:text-slate-400 max-w-[200px] truncate">
+                      <td className="py-3.5 px-4 text-slate-500 dark:text-slate-400 max-w-[200px] truncate border-r border-slate-200 dark:border-slate-700">
                         {row.alamatWp}
                       </td>
-                      <td className="py-3.5 px-4 text-slate-600 dark:text-slate-300">
+                      <td className="py-3.5 px-4 text-slate-600 dark:text-slate-300 border-r border-slate-200 dark:border-slate-700">
                         {row.samsat}
                       </td>
-                      <td className="py-3.5 px-4 text-slate-600 dark:text-slate-300">
+                      <td className="py-3.5 px-4 text-slate-600 dark:text-slate-300 border-r border-slate-200 dark:border-slate-700">
                         {row.ekspedisi}
                       </td>
-                      <td className="py-3.5 px-4 text-slate-500 dark:text-slate-400">
+                      <td className="py-3.5 px-4 text-slate-500 dark:text-slate-400 border-r border-slate-200 dark:border-slate-700">
                         {row.tanggalKirim}
                       </td>
-                      <td className="py-3.5 px-4 text-center">
+                      <td className="py-3.5 px-4 text-center border-r border-slate-200 dark:border-slate-700">
                         {getStatusBadge(row.status)}
                       </td>
                       <td className="py-3.5 px-4 text-center">
@@ -385,17 +390,27 @@ const PengirimanDataPage: React.FC = () => {
 
       {/* Modal Dialog Form Tambah Kiriman (Showcasing Input Field States & Design Tokens) */}
       <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-        <DialogContent className="max-w-xl bg-white rounded-2xl p-6 border border-slate-200 shadow-xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader className="space-y-1">
-            <DialogTitle className="type-title-large text-slate-900 font-bold">
-              Tambah Kiriman SKKP Baru
-            </DialogTitle>
-            <DialogDescription className="type-body-small text-slate-500">
-              Isi data berkas ketetapan pajak berikut untuk memulai pelacakan pengiriman.
-            </DialogDescription>
-          </DialogHeader>
+        <DialogContent className="max-w-xl bg-white dark:bg-slate-900 rounded-2xl p-6 sm:p-7 border border-slate-200 dark:border-slate-800 shadow-xl max-h-[90vh] overflow-y-auto">
+          <div className="border-b border-slate-200 dark:border-slate-800 pb-3.5 mb-4 flex items-start justify-between">
+            <div>
+              <DialogTitle className="text-xl font-bold text-slate-900 dark:text-white tracking-tight text-left">
+                Tambah Kiriman SKKP Baru
+              </DialogTitle>
+              <DialogDescription className="text-xs text-slate-500 dark:text-slate-400 text-left mt-0.5">
+                Isi data berkas ketetapan pajak berikut untuk memulai pelacakan pengiriman
+              </DialogDescription>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsAddModalOpen(false)}
+              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              title="Tutup Dialog"
+            >
+              <X size={18} />
+            </button>
+          </div>
 
-          <div className="space-y-3.5 py-2">
+          <div className="space-y-3.5 py-1">
             <Input
               label="Nomor Resi SKKP"
               placeholder="Contoh: SKKP-2026-009988"
@@ -438,7 +453,7 @@ const PengirimanDataPage: React.FC = () => {
             />
           </div>
 
-          {/* Tombol Aksi Full Width 2 Button Sesuai Gambar Referensi */}
+          {/* Tombol Aksi Full Width 2 Button Sesuai Gambar Referensi (Tanpa Icon Simpan) */}
           <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-100 dark:border-slate-800 w-full">
             <button
               type="button"
@@ -450,9 +465,9 @@ const PengirimanDataPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setIsAddModalOpen(false)}
-              className="w-full h-11 bg-[#08874f] hover:bg-[#06683d] text-white font-semibold text-sm rounded-lg transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer"
+              className="w-full h-11 bg-[#08874f] hover:bg-[#06683d] text-white font-semibold text-sm rounded-lg transition-all flex items-center justify-center shadow-xs cursor-pointer"
             >
-              Simpan Data Kiriman
+              Simpan
             </button>
           </div>
         </DialogContent>

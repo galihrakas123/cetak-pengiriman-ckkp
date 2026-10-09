@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { Navigation, Plus, Minus, Layers, Check, Compass, Clock, Sparkles } from "lucide-react";
+import { Navigation, Plus, Minus, Layers, Check } from "lucide-react";
 import { DeliveryRecord } from "@/types";
 
 /**
@@ -127,15 +127,6 @@ export const TrackingMap: React.FC<TrackingMapProps> = ({
 
   const [currentStyleId, setCurrentStyleId] = useState<string>(defaultStyleId);
   const [isStyleMenuOpen, setIsStyleMenuOpen] = useState<boolean>(false);
-  const [routeStats, setRouteStats] = useState<{
-    distanceKm: number;
-    durationMin: number;
-    isRealRoute: boolean;
-  }>({
-    distanceKm: 13.0,
-    durationMin: 14,
-    isRealRoute: true,
-  });
 
   // Inisialisasi Peta & Rute Jalan Raya
   useEffect(() => {
@@ -191,14 +182,7 @@ export const TrackingMap: React.FC<TrackingMapProps> = ({
           ? roadData.coordinates
           : FALLBACK_BANDUNG_ROAD;
 
-      const totalDist = roadData?.distanceKm ?? 13.0;
-      const totalDur = roadData?.durationMin ?? 14;
 
-      setRouteStats({
-        distanceKm: totalDist,
-        durationMin: totalDur,
-        isRealRoute: Boolean(roadData),
-      });
 
       // Tentukan posisi kurir pada segmen jalan raya yang presisi
       const totalPoints = fullRoute.length;
@@ -464,38 +448,6 @@ export const TrackingMap: React.FC<TrackingMapProps> = ({
         </button>
       </div>
 
-      {/* Floating Info Card Rute Terbaik (Pojok Kiri Bawah) */}
-      <div className="absolute bottom-4 left-4 z-20 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/90 dark:border-slate-800 rounded-2xl p-3.5 shadow-lg max-w-xs transition-all pointer-events-auto">
-        <div className="flex items-center gap-2.5 mb-2">
-          <div className="w-7 h-7 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-[#08874f] dark:text-emerald-400 flex items-center justify-center">
-            <Compass size={15} className="stroke-[2.4]" />
-          </div>
-          <div>
-            <span className="text-[11px] font-bold text-slate-800 dark:text-white uppercase tracking-wider block leading-tight">
-              Rute Jalan Terbaik
-            </span>
-            <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
-              <Sparkles size={10} />
-              {routeStats.isRealRoute ? "Kalkulasi Jalan Raya Aktif" : "Jalur Arteri Kota"}
-            </span>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-4 pt-2 border-t border-slate-100 dark:border-slate-800 text-xs">
-          <div className="flex items-center gap-1.5">
-            <span className="text-slate-400 text-[11px]">Jarak Rute:</span>
-            <span className="font-bold font-mono text-slate-900 dark:text-white">
-              {routeStats.distanceKm} km
-            </span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <Clock size={12} className="text-[#08874f] dark:text-emerald-400 stroke-[2.5]" />
-            <span className="font-semibold text-slate-700 dark:text-slate-200">
-              ~{routeStats.durationMin} mnt
-            </span>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };
