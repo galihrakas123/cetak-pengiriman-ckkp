@@ -58,7 +58,14 @@ export const AuthContextProvider = ({ children }: { children: ReactNode }) => {
     const matched = users.find((u) => {
       const uUsername = u.username?.toLowerCase() || "";
       const uEmail = u.email?.toLowerCase() || "";
-      return uUsername === cleanUser || uEmail === cleanUser;
+      const uNama = u.nama?.toLowerCase() || "";
+      const uSurname = u.surname?.toLowerCase() || "";
+      return (
+        uUsername === cleanUser ||
+        uEmail === cleanUser ||
+        uNama === cleanUser ||
+        uSurname === cleanUser
+      );
     });
 
     if (!matched) {

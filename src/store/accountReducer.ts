@@ -54,6 +54,7 @@ const accountReducer = (
       return {
         ...state,
         isLoggedIn: true,
+        isInitialised: true,
         user: user ?? state.user,
       };
     }

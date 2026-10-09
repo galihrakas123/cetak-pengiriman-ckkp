@@ -1,3 +1,5 @@
+import { getLocalStorage, setLocalStorage } from "@/services/localStorageService";
+
 export interface UserRecord {
   id: string;
   nama: string;
@@ -174,9 +176,8 @@ const STORAGE_KEY = "bapenda_user_management_db";
 
 function loadUsers(): UserRecord[] {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const parsed: any[] = JSON.parse(raw);
+    const parsed = getLocalStorage(STORAGE_KEY);
+    if (Array.isArray(parsed) && parsed.length > 0) {
       return parsed.map((u) => ({
         ...u,
         role: (u.role === "ADMIN" ? "ADMIN" : "PETUGAS") as "ADMIN" | "PETUGAS",
@@ -191,7 +192,7 @@ function loadUsers(): UserRecord[] {
 
 function saveUsers(users: UserRecord[]): void {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(users));
+    setLocalStorage(STORAGE_KEY, users);
   } catch (e) {
     console.error("Gagal menyimpan database user lokal:", e);
   }
@@ -202,10 +203,12 @@ let userDatabase: UserRecord[] = loadUsers();
 
 export const userService = {
   getAllUsers(): UserRecord[] {
+    userDatabase = loadUsers();
     return [...userDatabase];
   },
 
   getUserById(id: string): UserRecord | undefined {
+    userDatabase = loadUsers();
     return userDatabase.find((u) => u.id === id);
   },
 
